@@ -1,4 +1,4 @@
-using QuickApiMapper.Management.Api.Models;
+using QuickApiMapper.Management.Contracts.Models;
 
 namespace QuickApiMapper.Management.Api.Services;
 

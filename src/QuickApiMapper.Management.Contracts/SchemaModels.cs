@@ -1,4 +1,4 @@
-namespace QuickApiMapper.Management.Api.Models;
+namespace QuickApiMapper.Management.Contracts.Models;
 
 /// <summary>
 /// Represents a node in a schema tree (JSON, XML, gRPC).

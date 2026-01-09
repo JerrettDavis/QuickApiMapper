@@ -2,7 +2,7 @@ using System.Xml.Linq;
 using Newtonsoft.Json.Linq;
 using QuickApiMapper.Application.Extensions;
 using QuickApiMapper.Contracts;
-using QuickApiMapper.Management.Api.Models;
+using QuickApiMapper.Management.Contracts.Models;
 using QuickApiMapper.Persistence.Abstractions.Repositories;
 
 namespace QuickApiMapper.Management.Api.Services;

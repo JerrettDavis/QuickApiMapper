@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using QuickApiMapper.Management.Api.Models;
+using QuickApiMapper.Management.Contracts.Models;
 
 namespace QuickApiMapper.Management.Api.Controllers;
 

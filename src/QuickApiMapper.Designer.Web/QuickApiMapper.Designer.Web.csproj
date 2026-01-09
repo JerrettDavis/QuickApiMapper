@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <NoWarn>$(NoWarn);CS0436</NoWarn>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(BaseOutputPath)publish\web\</PublishDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\QuickApiMapper.Management.Api\QuickApiMapper.Management.Api.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Management.Contracts\QuickApiMapper.Management.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
