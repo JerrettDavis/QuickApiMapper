@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <GlobalPackageReference Include="IDisposableAnalyzers" Version="4.0.6" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
-    <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.7.112" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
+    <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.9.50" PrivateAssets="All" IncludeAssets="Runtime;Build;Native;contentFiles;Analyzers" />
     <GlobalPackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     <PackageVersion Include="Ardalis.GuardClauses" Version="5.0.0" />
     <PackageVersion Include="CSharpFunctionalExtensions" Version="3.6.0" />
