@@ -228,7 +228,7 @@ jobs:
           du -sh ./dry-run-publish/* 2>/dev/null || echo "  No executables published"
 
       - name: Upload dry-run artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: dry-run-artifacts-${{ github.event.pull_request.number }}
