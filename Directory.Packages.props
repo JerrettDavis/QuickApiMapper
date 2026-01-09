@@ -67,6 +67,6 @@
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <!-- Web Packages -->
     <PackageVersion Include="Scalar.AspNetCore" Version="2.11.10" />
-    <PackageVersion Include="MudBlazor" Version="8.0.0" />
+    <PackageVersion Include="MudBlazor" Version="8.15.0" />
   </ItemGroup>
 </Project>
