@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <NoWarn>$(NoWarn);CS0436</NoWarn>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(BaseOutputPath)publish\web\</PublishDir>
   </PropertyGroup>
 
   <ItemGroup>
