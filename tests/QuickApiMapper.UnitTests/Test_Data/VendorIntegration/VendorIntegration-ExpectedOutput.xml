@@ -25,10 +25,6 @@
                         <phone_number>555-987-6543</phone_number>
                         <metadata>
                             <item>
-                                <key>is_primary</key>
-                                <value>Y</value>
-                            </item>
-                            <item>
                                 <key>address_category</key>
                                 <value>PRIMARY</value>
                             </item>

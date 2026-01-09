@@ -26,7 +26,7 @@
           <row>
             <street_address>123 Main Street</street_address>
             <address_category>PRIMARY</address_category>
-            <validation_status>V</validation_status>
+            <validation_status>A</validation_status>
             <city>Springfield</city>
             <country_code>US</country_code>
             <phone_number>555-123-4567</phone_number>
