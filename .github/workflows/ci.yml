@@ -199,6 +199,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Publish Management API
+        shell: bash
         run: |
           dotnet publish src/QuickApiMapper.Management.Api \
             --configuration Release \
@@ -210,6 +211,7 @@ jobs:
             /p:Version=${{ needs.build-and-test.outputs.version }}
 
       - name: Publish Web API
+        shell: bash
         run: |
           dotnet publish src/QuickApiMapper.Web \
             --configuration Release \
@@ -221,6 +223,7 @@ jobs:
             /p:Version=${{ needs.build-and-test.outputs.version }}
 
       - name: Publish Designer Web
+        shell: bash
         run: |
           dotnet publish src/QuickApiMapper.Designer.Web \
             --configuration Release \
