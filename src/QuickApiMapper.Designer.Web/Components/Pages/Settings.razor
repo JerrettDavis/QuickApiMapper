@@ -1,0 +1,126 @@
+@page "/settings"
+
+<PageTitle>Settings - QuickApiMapper Designer</PageTitle>
+
+<div class="fade-in">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">Settings</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Configure your QuickApiMapper preferences
+            </MudText>
+        </div>
+    </MudStack>
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-6">
+                <MudText Typo="Typo.h6" Class="mb-4">Appearance</MudText>
+
+                <MudStack Spacing="4">
+                    <MudSelect @bind-Value="_themeMode" Label="Theme" Variant="Variant.Outlined">
+                        <MudSelectItem Value="@("System")">System Default</MudSelectItem>
+                        <MudSelectItem Value="@("Light")">Light</MudSelectItem>
+                        <MudSelectItem Value="@("Dark")">Dark</MudSelectItem>
+                    </MudSelect>
+
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Choose how QuickApiMapper looks. System default will match your operating system's theme.
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-6">
+                <MudText Typo="Typo.h6" Class="mb-4">API Configuration</MudText>
+
+                <MudStack Spacing="4">
+                    <MudTextField @bind-Value="_apiTimeout"
+                                 Label="API Timeout (seconds)"
+                                 Variant="Variant.Outlined"
+                                 InputType="InputType.Number" />
+
+                    <MudSwitch @bind-Value="_enableApiLogging" Color="Color.Primary">
+                        Enable API request logging
+                    </MudSwitch>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-6">
+                <MudText Typo="Typo.h6" Class="mb-4">Integration Settings</MudText>
+
+                <MudStack Spacing="4">
+                    <MudNumericField @bind-Value="_defaultRetryAttempts"
+                                    Label="Default Retry Attempts"
+                                    Variant="Variant.Outlined"
+                                    Min="0"
+                                    Max="10" />
+
+                    <MudSwitch @bind-Value="_autoSaveIntegrations" Color="Color.Primary">
+                        Auto-save integration changes
+                    </MudSwitch>
+
+                    <MudSwitch @bind-Value="_validateOnSave" Color="Color.Primary">
+                        Validate integrations before saving
+                    </MudSwitch>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" OnClick="ResetToDefaults">
+                    Reset to Defaults
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveSettings">
+                    Save Changes
+                </MudButton>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+</div>
+
+@code {
+    private string _themeMode = "System";
+    private int _apiTimeout = 30;
+    private bool _enableApiLogging = true;
+    private int _defaultRetryAttempts = 3;
+    private bool _autoSaveIntegrations = false;
+    private bool _validateOnSave = true;
+
+    protected override void OnInitialized()
+    {
+        // Load settings from local storage or configuration
+        LoadSettings();
+    }
+
+    private void LoadSettings()
+    {
+        // TODO: Load from local storage or user preferences
+        // For now, using defaults
+    }
+
+    private void SaveSettings()
+    {
+        // TODO: Save to local storage or user preferences
+        Snackbar.Add("Settings saved successfully", Severity.Success);
+    }
+
+    private void ResetToDefaults()
+    {
+        _themeMode = "System";
+        _apiTimeout = 30;
+        _enableApiLogging = true;
+        _defaultRetryAttempts = 3;
+        _autoSaveIntegrations = false;
+        _validateOnSave = true;
+
+        Snackbar.Add("Settings reset to defaults", Severity.Info);
+    }
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+}

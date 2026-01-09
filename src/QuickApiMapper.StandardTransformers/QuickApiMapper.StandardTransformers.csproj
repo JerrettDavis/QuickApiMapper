@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <ItemGroup>
+      <ProjectReference Include="..\QuickApiMapper.Application\QuickApiMapper.Application.csproj" />
+      <ProjectReference Include="..\QuickApiMapper.Web\QuickApiMapper.Web.csproj" />
+    </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuickApiMapper.Application\QuickApiMapper.Application.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopyStandardTransformersToWeb" AfterTargets="Build">
+    <Copy
+      SourceFiles="$(TargetPath)"
+      DestinationFolder="$(MSBuildThisFileDirectory)..\QuickApiMapper.Web\Transformers\"
+      SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

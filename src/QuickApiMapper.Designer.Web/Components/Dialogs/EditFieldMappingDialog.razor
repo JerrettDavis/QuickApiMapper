@@ -1,0 +1,88 @@
+@using MudBlazor
+@using QuickApiMapper.Management.Api.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="Model.Source"
+                         Label="Source Path"
+                         Variant="Variant.Outlined"
+                         HelperText="JSONPath expression (e.g., $.customer.name) or static value reference (e.g., $$.MyValue)"
+                         Required="true" />
+
+            <MudTextField @bind-Value="Model.Destination"
+                         Label="Destination Path"
+                         Variant="Variant.Outlined"
+                         HelperText="XPath expression (e.g., /root/customer/name)"
+                         Required="true" />
+
+            <MudNumericField @bind-Value="Model.Order"
+                            Label="Order"
+                            Variant="Variant.Outlined"
+                            Min="0"
+                            HelperText="Execution order for this mapping" />
+
+            <MudText Typo="Typo.h6" Class="mt-2">Transformers</MudText>
+
+            @if (Model.Transformers?.Any() == true)
+            {
+                <MudList T="string" Dense="true">
+                    @foreach (var transformer in Model.Transformers)
+                    {
+                        <MudListItem T="string">
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText>@transformer.Name</MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                              Size="Size.Small"
+                                              Color="Color.Error"
+                                              OnClick="@(() => RemoveTransformer(transformer))" />
+                            </MudStack>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info" Dense="true">No transformers configured</MudAlert>
+            }
+
+            <MudTextField @bind-Value="_newTransformerName"
+                         Label="Add Transformer"
+                         Variant="Variant.Outlined"
+                         Adornment="Adornment.End"
+                         AdornmentIcon="@Icons.Material.Filled.Add"
+                         OnAdornmentClick="AddTransformer"
+                         HelperText="Enter transformer name and click + to add" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public FieldMappingDto Model { get; set; } = new();
+
+    private string _newTransformerName = string.Empty;
+
+    private void AddTransformer()
+    {
+        if (!string.IsNullOrWhiteSpace(_newTransformerName))
+        {
+            Model.Transformers ??= new List<TransformerDto>();
+            Model.Transformers.Add(new TransformerDto { Name = _newTransformerName });
+            _newTransformerName = string.Empty;
+        }
+    }
+
+    private void RemoveTransformer(TransformerDto transformer)
+    {
+        Model.Transformers?.Remove(transformer);
+    }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(Model));
+    private void Cancel() => MudDialog.Cancel();
+}

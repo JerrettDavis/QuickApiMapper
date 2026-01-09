@@ -1,0 +1,707 @@
+@page "/create"
+@page "/edit/{id:guid}"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Management.Api.Models
+@inject IntegrationApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>@(IsEditMode ? "Edit Integration" : "Create Integration")</PageTitle>
+
+<MudText Typo="Typo.h3" Class="mb-4">@(IsEditMode ? "Edit Integration" : "Create Integration")</MudText>
+
+<MudPaper Class="pa-4">
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+
+        @* Step 1: Basic Information *@
+        <MudTabPanel Text="Basic Information" Icon="@Icons.Material.Filled.Info">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_model.Name"
+                                  Label="Integration Name"
+                                  Required="true"
+                                  Variant="Variant.Outlined"
+                                  HelperText="Unique name for this integration" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_model.Endpoint"
+                                  Label="Endpoint Path"
+                                  Required="true"
+                                  Variant="Variant.Outlined"
+                                  HelperText="e.g., /api/integration1" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="_model.SourceType"
+                               Label="Source Type"
+                               Required="true"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem Value="@("JSON")">JSON</MudSelectItem>
+                        <MudSelectItem Value="@("XML")">XML</MudSelectItem>
+                        <MudSelectItem Value="@("SOAP")">SOAP</MudSelectItem>
+                        <MudSelectItem Value="@("gRPC")">gRPC</MudSelectItem>
+                        <MudSelectItem Value="@("ServiceBus")">Azure Service Bus</MudSelectItem>
+                        <MudSelectItem Value="@("RabbitMQ")">RabbitMQ</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="_model.DestinationType"
+                               Label="Destination Type"
+                               Required="true"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem Value="@("JSON")">JSON</MudSelectItem>
+                        <MudSelectItem Value="@("XML")">XML</MudSelectItem>
+                        <MudSelectItem Value="@("SOAP")">SOAP</MudSelectItem>
+                        <MudSelectItem Value="@("gRPC")">gRPC</MudSelectItem>
+                        <MudSelectItem Value="@("ServiceBus")">Azure Service Bus</MudSelectItem>
+                        <MudSelectItem Value="@("RabbitMQ")">RabbitMQ</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.DestinationUrl"
+                                  Label="Destination URL"
+                                  Required="true"
+                                  Variant="Variant.Outlined"
+                                  HelperText="Target endpoint to send transformed data" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_model.IsActive"
+                               Label="Active"
+                               Color="Color.Success" />
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        @* Step 2: Protocol Configuration *@
+        <MudTabPanel Text="Protocol Configuration" Icon="@Icons.Material.Filled.Settings">
+            <MudGrid>
+                @if (_model.SourceType == "SOAP" || _model.DestinationType == "SOAP")
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6" Class="mb-2">SOAP Configuration</MudText>
+                        <MudTextField @bind-Value="_soapBodyWrapperXPath"
+                                      Label="Body Wrapper XPath"
+                                      Variant="Variant.Outlined"
+                                      HelperText="XPath to SOAP body wrapper element" />
+                    </MudItem>
+                }
+
+                @if (_model.SourceType == "gRPC" || _model.DestinationType == "gRPC")
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6" Class="mb-2">gRPC Configuration</MudText>
+                        <MudTextField @bind-Value="_grpcServiceName"
+                                      Label="Service Name"
+                                      Variant="Variant.Outlined"
+                                      HelperText="gRPC service name" />
+                        <MudTextField @bind-Value="_grpcMethodName"
+                                      Label="Method Name"
+                                      Variant="Variant.Outlined"
+                                      HelperText="gRPC method name"
+                                      Class="mt-2" />
+                    </MudItem>
+                }
+
+                @if (_model.SourceType == "ServiceBus" || _model.DestinationType == "ServiceBus")
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6" Class="mb-2">Azure Service Bus Configuration</MudText>
+                        <MudTextField @bind-Value="_serviceBusConnectionString"
+                                      Label="Connection String"
+                                      Variant="Variant.Outlined"
+                                      HelperText="Service Bus connection string"
+                                      InputType="InputType.Password" />
+                        <MudTextField @bind-Value="_serviceBusQueue"
+                                      Label="Queue/Topic Name"
+                                      Variant="Variant.Outlined"
+                                      HelperText="Queue or topic name"
+                                      Class="mt-2" />
+                    </MudItem>
+                }
+
+                @if (_model.SourceType == "RabbitMQ" || _model.DestinationType == "RabbitMQ")
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6" Class="mb-2">RabbitMQ Configuration</MudText>
+                        <MudTextField @bind-Value="_rabbitMqHostName"
+                                      Label="Host Name"
+                                      Variant="Variant.Outlined"
+                                      HelperText="RabbitMQ host" />
+                        <MudTextField @bind-Value="_rabbitMqExchange"
+                                      Label="Exchange"
+                                      Variant="Variant.Outlined"
+                                      HelperText="Exchange name"
+                                      Class="mt-2" />
+                        <MudTextField @bind-Value="_rabbitMqRoutingKey"
+                                      Label="Routing Key"
+                                      Variant="Variant.Outlined"
+                                      HelperText="Routing key"
+                                      Class="mt-2" />
+                    </MudItem>
+                }
+
+                @if (_model.SourceType != "SOAP" && _model.DestinationType != "SOAP" &&
+                     _model.SourceType != "gRPC" && _model.DestinationType != "gRPC" &&
+                     _model.SourceType != "ServiceBus" && _model.DestinationType != "ServiceBus" &&
+                     _model.SourceType != "RabbitMQ" && _model.DestinationType != "RabbitMQ")
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Info">
+                            No additional protocol configuration required for JSON/XML mappings.
+                        </MudAlert>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudTabPanel>
+
+        @* Step 3: Schema Import *@
+        <MudTabPanel Text="Schema Import" Icon="@Icons.Material.Filled.Upload">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Outlined="true">
+                        <MudText Typo="Typo.h6" Class="mb-2">Source Schema</MudText>
+                        <MudTextField @bind-Value="_sourceSchemaUrl"
+                                      Label="Schema URL or JSON"
+                                      Variant="Variant.Outlined"
+                                      Lines="5"
+                                      HelperText="Paste JSON schema or provide URL" />
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.CloudUpload"
+                                   OnClick="ImportSourceSchema"
+                                   Class="mt-2">
+                            Import Source Schema
+                        </MudButton>
+
+                        @if (_sourceSchemaTree != null)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                                Schema imported successfully (@_sourceSchemaTree.Children?.Count ?? 0 fields)
+                            </MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Outlined="true">
+                        <MudText Typo="Typo.h6" Class="mb-2">Destination Schema</MudText>
+                        <MudTextField @bind-Value="_destinationSchemaUrl"
+                                      Label="Schema URL or JSON"
+                                      Variant="Variant.Outlined"
+                                      Lines="5"
+                                      HelperText="Paste JSON schema or provide URL" />
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.CloudUpload"
+                                   OnClick="ImportDestinationSchema"
+                                   Class="mt-2">
+                            Import Destination Schema
+                        </MudButton>
+
+                        @if (_destinationSchemaTree != null)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-2">
+                                Schema imported successfully (@_destinationSchemaTree.Children?.Count ?? 0 fields)
+                            </MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info" Class="mt-2">
+                        Schema import enables visual field mapping. You can skip this step and configure mappings manually in the next step.
+                    </MudAlert>
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        @* Step 4: Field Mapping *@
+        <MudTabPanel Text="Field Mapping" Icon="@Icons.Material.Filled.CompareArrows">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="AddFieldMapping">
+                        Add Field Mapping
+                    </MudButton>
+                </MudItem>
+
+                @if (_model.FieldMappings != null && _model.FieldMappings.Any())
+                {
+                    <MudItem xs="12">
+                        <MudTable Items="_model.FieldMappings" Hover="true" Breakpoint="Breakpoint.Sm">
+                            <HeaderContent>
+                                <MudTh>Order</MudTh>
+                                <MudTh>Source</MudTh>
+                                <MudTh>Destination</MudTh>
+                                <MudTh>Transformers</MudTh>
+                                <MudTh>Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>@context.Order</MudTd>
+                                <MudTd>@context.Source</MudTd>
+                                <MudTd>@context.Destination</MudTd>
+                                <MudTd>@(context.Transformers?.Count ?? 0)</MudTd>
+                                <MudTd>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => EditFieldMapping(context))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => DeleteFieldMapping(context))" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning">
+                            No field mappings defined. Add at least one mapping to proceed.
+                        </MudAlert>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudTabPanel>
+
+        @* Step 5: Static Values & Behaviors *@
+        <MudTabPanel Text="Static Values & Behaviors" Icon="@Icons.Material.Filled.Tune">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h6" Class="mb-2">Static Values</MudText>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="AddStaticValue"
+                               Size="Size.Small">
+                        Add Static Value
+                    </MudButton>
+                </MudItem>
+
+                @if (_model.StaticValues != null && _model.StaticValues.Any())
+                {
+                    <MudItem xs="12">
+                        <MudSimpleTable Hover="true">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var kvp in _model.StaticValues)
+                                {
+                                    <tr>
+                                        <td>@kvp.Key</td>
+                                        <td>@kvp.Value</td>
+                                        <td>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Color="Color.Error"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => DeleteStaticValue(kvp.Key))" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudItem>
+                }
+
+                <MudItem xs="12" Class="mt-4">
+                    <MudText Typo="Typo.h6" Class="mb-2">Behaviors</MudText>
+                    <MudAlert Severity="Severity.Info">
+                        Behavior configuration will be added in a future update.
+                    </MudAlert>
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        @* Step 6: Review & Save *@
+        <MudTabPanel Text="Review & Save" Icon="@Icons.Material.Filled.CheckCircle">
+            <MudStack Spacing="4">
+                @* Integration Summary *@
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudPaper Class="pa-4" Outlined="true">
+                            <MudText Typo="Typo.h6" Class="mb-2">Integration Summary</MudText>
+                            <MudText Typo="Typo.body2"><strong>Name:</strong> @_model.Name</MudText>
+                            <MudText Typo="Typo.body2"><strong>Endpoint:</strong> @_model.Endpoint</MudText>
+                            <MudText Typo="Typo.body2"><strong>Source:</strong> @_model.SourceType</MudText>
+                            <MudText Typo="Typo.body2"><strong>Destination:</strong> @_model.DestinationType</MudText>
+                            <MudText Typo="Typo.body2"><strong>Destination URL:</strong> @_model.DestinationUrl</MudText>
+                            <MudText Typo="Typo.body2"><strong>Status:</strong> @(_model.IsActive ? "Active" : "Inactive")</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudPaper Class="pa-4" Outlined="true">
+                            <MudText Typo="Typo.h6" Class="mb-2">Configuration Summary</MudText>
+                            <MudText Typo="Typo.body2"><strong>Field Mappings:</strong> @(_model.FieldMappings?.Count ?? 0)</MudText>
+                            <MudText Typo="Typo.body2"><strong>Static Values:</strong> @(_model.StaticValues?.Count ?? 0)</MudText>
+                            <MudText Typo="Typo.body2"><strong>SOAP Config:</strong> @(_model.SoapConfig != null ? "Yes" : "No")</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+                @* Schema Examples *@
+                @if (_model.FieldMappings?.Any() == true)
+                {
+                    <MudText Typo="Typo.h6" Class="mt-4 mb-2">Schema Examples</MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <SchemaPreview SourceType="@_model.SourceType"
+                                          FieldMappings="@_model.FieldMappings"
+                                          StaticValues="@_model.StaticValues"
+                                          Title="Source Schema"
+                                          IsSource="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <SchemaPreview SourceType="@_model.DestinationType"
+                                          FieldMappings="@_model.FieldMappings"
+                                          StaticValues="@_model.StaticValues"
+                                          Title="Destination Schema"
+                                          IsSource="false" />
+                        </MudItem>
+                    </MudGrid>
+                }
+
+                @* Field Mappings *@
+                @if (_model.FieldMappings?.Any() == true)
+                {
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-4">
+                            Field Mappings
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-2">@_model.FieldMappings.Count</MudChip>
+                        </MudText>
+                        <MappingDetailsTable FieldMappings="@_model.FieldMappings" />
+                    </MudPaper>
+                }
+
+                @* Static Values *@
+                @if (_model.StaticValues?.Any() == true)
+                {
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-4">
+                            Static Values
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Class="ml-2">@_model.StaticValues.Count</MudChip>
+                        </MudText>
+                        <MudSimpleTable Hover="true" Dense="true">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var kvp in _model.StaticValues)
+                                {
+                                    <tr>
+                                        <td><MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">$$@kvp.Key</MudChip></td>
+                                        <td>@kvp.Value</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudPaper>
+                }
+
+                @* Protocol Configuration *@
+                @if (!string.IsNullOrEmpty(_soapBodyWrapperXPath) ||
+                     !string.IsNullOrEmpty(_grpcServiceName) ||
+                     !string.IsNullOrEmpty(_serviceBusConnectionString) ||
+                     !string.IsNullOrEmpty(_rabbitMqHostName))
+                {
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-4">Protocol Configuration</MudText>
+
+                        @if (!string.IsNullOrEmpty(_soapBodyWrapperXPath))
+                        {
+                            <MudText Typo="Typo.body2"><strong>SOAP Body Wrapper XPath:</strong> @_soapBodyWrapperXPath</MudText>
+                        }
+
+                        @if (!string.IsNullOrEmpty(_grpcServiceName))
+                        {
+                            <MudText Typo="Typo.body2"><strong>gRPC Service:</strong> @_grpcServiceName</MudText>
+                            <MudText Typo="Typo.body2"><strong>gRPC Method:</strong> @_grpcMethodName</MudText>
+                        }
+
+                        @if (!string.IsNullOrEmpty(_serviceBusConnectionString))
+                        {
+                            <MudText Typo="Typo.body2"><strong>Service Bus Queue:</strong> @_serviceBusQueue</MudText>
+                        }
+
+                        @if (!string.IsNullOrEmpty(_rabbitMqHostName))
+                        {
+                            <MudText Typo="Typo.body2"><strong>RabbitMQ Host:</strong> @_rabbitMqHostName</MudText>
+                            <MudText Typo="Typo.body2"><strong>RabbitMQ Exchange:</strong> @_rabbitMqExchange</MudText>
+                            <MudText Typo="Typo.body2"><strong>RabbitMQ Routing Key:</strong> @_rabbitMqRoutingKey</MudText>
+                        }
+                    </MudPaper>
+                }
+
+                @* Save Button *@
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="SaveIntegration"
+                           Size="Size.Large"
+                           FullWidth="true"
+                           Class="mt-4">
+                    @(IsEditMode ? "Update Integration" : "Create Integration")
+                </MudButton>
+            </MudStack>
+        </MudTabPanel>
+
+    </MudTabs>
+
+    <MudPaper Class="pa-4 mt-4">
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Cancel</MudButton>
+    </MudPaper>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private CreateIntegrationRequest _model = new();
+    private bool IsEditMode => Id.HasValue && Id.Value != Guid.Empty;
+
+    // Protocol-specific fields
+    private string? _soapBodyWrapperXPath;
+    private string? _grpcServiceName;
+    private string? _grpcMethodName;
+    private string? _serviceBusConnectionString;
+    private string? _serviceBusQueue;
+    private string? _rabbitMqHostName;
+    private string? _rabbitMqExchange;
+    private string? _rabbitMqRoutingKey;
+
+    // Schema import
+    private string? _sourceSchemaUrl;
+    private string? _destinationSchemaUrl;
+    private SchemaTreeNode? _sourceSchemaTree;
+    private SchemaTreeNode? _destinationSchemaTree;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEditMode)
+        {
+            await LoadIntegration();
+        }
+        else
+        {
+            InitializeNewIntegration();
+        }
+    }
+
+    private void InitializeNewIntegration()
+    {
+        _model = new CreateIntegrationRequest
+        {
+            IsActive = true,
+            FieldMappings = new List<FieldMappingDto>(),
+            StaticValues = new Dictionary<string, string>()
+        };
+    }
+
+    private async Task LoadIntegration()
+    {
+        if (!Id.HasValue) return;
+
+        var integration = await ApiClient.GetIntegrationByIdAsync(Id.Value);
+        if (integration == null)
+        {
+            Snackbar.Add("Integration not found", Severity.Error);
+            Navigation.NavigateTo("/integrations");
+            return;
+        }
+
+        // Map to request model
+        _model = new CreateIntegrationRequest
+        {
+            Name = integration.Name,
+            Endpoint = integration.Endpoint,
+            SourceType = integration.SourceType,
+            DestinationType = integration.DestinationType,
+            DestinationUrl = integration.DestinationUrl,
+            IsActive = integration.IsActive,
+            FieldMappings = integration.FieldMappings ?? new List<FieldMappingDto>(),
+            StaticValues = integration.StaticValues ?? new Dictionary<string, string>(),
+            SoapConfig = integration.SoapConfig
+        };
+
+        // Load protocol-specific settings
+        if (integration.SoapConfig != null)
+        {
+            _soapBodyWrapperXPath = integration.SoapConfig.BodyWrapperFieldXpath;
+        }
+    }
+
+    private async Task ImportSourceSchema()
+    {
+        if (string.IsNullOrWhiteSpace(_sourceSchemaUrl))
+        {
+            Snackbar.Add("Please provide a schema URL or JSON", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            var request = new ImportJsonSchemaRequest { SchemaContent = _sourceSchemaUrl };
+            var response = await ApiClient.ImportJsonSchemaAsync(request);
+
+            if (response != null)
+            {
+                _sourceSchemaTree = response.SchemaTree;
+                Snackbar.Add("Source schema imported successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Failed to import source schema", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error importing schema: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ImportDestinationSchema()
+    {
+        if (string.IsNullOrWhiteSpace(_destinationSchemaUrl))
+        {
+            Snackbar.Add("Please provide a schema URL or JSON", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            var request = new ImportJsonSchemaRequest { SchemaContent = _destinationSchemaUrl };
+            var response = await ApiClient.ImportJsonSchemaAsync(request);
+
+            if (response != null)
+            {
+                _destinationSchemaTree = response.SchemaTree;
+                Snackbar.Add("Destination schema imported successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Failed to import destination schema", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error importing schema: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void AddFieldMapping()
+    {
+        _model.FieldMappings ??= new List<FieldMappingDto>();
+
+        var newMapping = new FieldMappingDto
+        {
+            Order = _model.FieldMappings.Count,
+            Source = string.Empty,
+            Destination = string.Empty,
+            Transformers = new List<TransformerDto>()
+        };
+
+        _model.FieldMappings.Add(newMapping);
+    }
+
+    private void EditFieldMapping(FieldMappingDto mapping)
+    {
+        // TODO: Open dialog to edit field mapping
+        Snackbar.Add("Field mapping editor coming soon", Severity.Info);
+    }
+
+    private void DeleteFieldMapping(FieldMappingDto mapping)
+    {
+        _model.FieldMappings?.Remove(mapping);
+
+        // Reorder remaining mappings
+        if (_model.FieldMappings != null)
+        {
+            for (int i = 0; i < _model.FieldMappings.Count; i++)
+            {
+                _model.FieldMappings[i].Order = i;
+            }
+        }
+    }
+
+    private void AddStaticValue()
+    {
+        // TODO: Open dialog to add static value
+        _model.StaticValues ??= new Dictionary<string, string>();
+        _model.StaticValues[$"key{_model.StaticValues.Count + 1}"] = "value";
+    }
+
+    private void DeleteStaticValue(string key)
+    {
+        _model.StaticValues?.Remove(key);
+    }
+
+    private async Task SaveIntegration()
+    {
+        // Build SOAP config if needed
+        if (!string.IsNullOrWhiteSpace(_soapBodyWrapperXPath))
+        {
+            _model.SoapConfig = new SoapConfigDto
+            {
+                BodyWrapperFieldXpath = _soapBodyWrapperXPath,
+                Fields = new List<SoapFieldDto>()
+            };
+        }
+
+        try
+        {
+            IntegrationDto? result;
+
+            if (IsEditMode && Id.HasValue)
+            {
+                var updateRequest = new UpdateIntegrationRequest
+                {
+                    Name = _model.Name,
+                    Endpoint = _model.Endpoint,
+                    SourceType = _model.SourceType,
+                    DestinationType = _model.DestinationType,
+                    DestinationUrl = _model.DestinationUrl,
+                    IsActive = _model.IsActive,
+                    FieldMappings = _model.FieldMappings,
+                    StaticValues = _model.StaticValues,
+                    SoapConfig = _model.SoapConfig
+                };
+
+                result = await ApiClient.UpdateIntegrationAsync(Id.Value, updateRequest);
+                Snackbar.Add("Integration updated successfully", Severity.Success);
+            }
+            else
+            {
+                result = await ApiClient.CreateIntegrationAsync(_model);
+                Snackbar.Add("Integration created successfully", Severity.Success);
+            }
+
+            if (result != null)
+            {
+                Navigation.NavigateTo("/integrations");
+            }
+            else
+            {
+                Snackbar.Add("Failed to save integration", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving integration: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/integrations");
+    }
+}

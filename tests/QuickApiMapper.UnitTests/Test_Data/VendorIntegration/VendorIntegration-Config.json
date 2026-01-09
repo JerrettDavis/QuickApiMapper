@@ -1,0 +1,70 @@
+{
+  "Mappings": [
+    {
+      "Name": "VendorIntegration",
+      "Endpoint": "/VendorIntegration",
+      "SourceType": "JSON",
+      "DestinationType": "SOAP",
+      "DestinationUrl": "https://example.com/api/vendor-service",
+      "PayloadArguments": [
+        {
+          "Type": "DefaultNamespace",
+          "Value": "urn:example.com:services:vendor/v1.0"
+        },
+        {
+          "Type": "Namespace",
+          "Value": "http://schemas.xmlsoap.org/soap/envelope/"
+        }
+      ],
+      "DispatchFor": "$.supplierinfo",
+      "StaticValues": {
+        "ActionName": "sync",
+        "RegionId": "US-WEST",
+        "IsPrimaryLabel": "is_primary",
+        "Y": "Y",
+        "AddressCategoryLabel": "address_category",
+        "AddressCategory": "PRIMARY",
+        "True": "true",
+        "False": "false",
+        "MaxRetries": "10",
+        "EntityName": "vendor",
+        "SessionAlias": "",
+        "SessionEmail": ""
+      },
+      "Mapping": [
+        {"Source": "$.interface"},
+        {"Source": "$.direction"},
+        {"Source": "$.sender"},
+        {"Source": "$.sender_message_id"},
+        {"Source": "$.receiver"},
+        {"Source": "$$.SessionAlias", "Destination": "/root/session/@alias"},
+        {"Source": "$$.SessionEmail", "Destination": "/root/session/@email"},
+        {"Source": "$$.True", "Destination": "/root/session/@sendOnErrorOnly"},
+        {"Source": "$$.EntityName", "Destination": "/root/session/state/@entity_name"},
+        {"Source": "$$.False", "Destination": "/root/session/state/@use_cache"},
+        {"Source": "$$.True", "Destination": "/root/session/state/@allow_save"},
+        {"Source": "$$.True", "Destination": "/root/session/state/@retry_on_error"},
+        {"Source": "$$.MaxRetries", "Destination": "/root/session/state/@max_retries"},
+        {"Source": "$$.ActionName", "Destination": "/root/session/state/action/@name"},
+        {"Source": "$.supplierinfo[0].supplier_id", "Destination": "/root/session/state/action/main/row/vendor_id"},
+        {"Source": "$.supplierinfo[0].supplier_name", "Destination": "/root/session/state/action/main/row/name"},
+        {"Source": "$.supplierinfo[0].invoice[0].currency", "Destination": "/root/session/state/action/main/row/currency_code"},
+        {"Source": "$.supplierinfo[0].invoice[0].payment_terms", "Destination": "/root/session/state/action/main/row/payment_terms_id"},
+        {"Source": "$$.RegionId", "Destination": "/root/session/state/action/main/row/region_id"},
+        {"Source": "$.supplierinfo[0].communication[?(@.comm_type == 'Email')].comm_value", "Destination": "/root/session/state/action/main/row/contact_email"},
+        {"Source": "$$.Y", "Destination": "/root/session/state/action/main/row/is_active"},
+        {"Source": "$.supplierinfo[0].address[?(@.address_type == 'Invoice')].address_1", "Destination": "/root/session/state/action/addresses/row/street_address"},
+        {"Source": "$$.AddressCategory", "Destination": "/root/session/state/action/addresses/row/address_category"},
+        {"Source": "$.supplierinfo[0].address[?(@.address_type == 'Invoice')].city", "Destination": "/root/session/state/action/addresses/row/city"},
+        {"Source": "$.supplierinfo[0].address[?(@.address_type == 'Invoice')].zip_code", "Destination": "/root/session/state/action/addresses/row/postal_code"},
+        {"Source": "$.supplierinfo[0].address[?(@.address_type == 'Invoice')].country_code", "Destination": "/root/session/state/action/addresses/row/country_code"},
+        {"Source": "$.supplierinfo[0].address[?(@.address_type == 'Invoice')].state", "Destination": "/root/session/state/action/addresses/row/state_code"},
+        {"Source": "$.supplierinfo[0].communication[?(@.comm_type == 'Phone')].comm_value", "Destination": "/root/session/state/action/addresses/row/phone_number"},
+        {"Source": "$$.IsPrimaryLabel", "Destination": "/root/session/state/action/addresses/row/metadata/item/key"},
+        {"Source": "$$.Y", "Destination": "/root/session/state/action/addresses/row/metadata/item/value"},
+        {"Source": "$$.AddressCategoryLabel", "Destination": "/root/session/state/action/addresses/row/metadata/item/key"},
+        {"Source": "$$.AddressCategory", "Destination": "/root/session/state/action/addresses/row/metadata/item/value"}
+      ]
+    }
+  ]
+}

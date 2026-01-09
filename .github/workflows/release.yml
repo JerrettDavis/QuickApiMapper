@@ -1,0 +1,442 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  validate-release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      is-prerelease: ${{ steps.get-version.outputs.is-prerelease }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            # Check if version contains alpha, beta, rc, or preview
+            if echo "$VERSION" | grep -qE "(alpha|beta|rc|preview)"; then
+              IS_PRERELEASE=true
+            else
+              IS_PRERELEASE=false
+            fi
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is-prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+
+          echo "📦 Release Version: $VERSION"
+          echo "🏷️  Pre-release: $IS_PRERELEASE"
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$'; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-PRERELEASE"
+            exit 1
+          fi
+          echo "✅ Version format is valid"
+
+  build-and-test:
+    name: Build and Test
+    needs: validate-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: |
+          dotnet build \
+            --configuration Release \
+            --no-restore \
+            /p:ContinuousIntegrationBuild=true \
+            /p:Deterministic=true \
+            /p:Version=${{ needs.validate-release.outputs.version }}
+
+      - name: Run unit tests
+        run: |
+          dotnet test tests/QuickApiMapper.UnitTests \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=unit-tests.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults/Unit
+
+      - name: Run integration tests
+        run: |
+          dotnet test tests/QuickApiMapper.IntegrationTests \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=integration-tests.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults/Integration
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            TestResults/**/*.trx
+          check_name: Release Test Results
+
+  package-nuget:
+    name: Package NuGet
+    needs: [validate-release, build-and-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: |
+          dotnet build \
+            --configuration Release \
+            --no-restore \
+            /p:ContinuousIntegrationBuild=true \
+            /p:Deterministic=true \
+            /p:Version=${{ needs.validate-release.outputs.version }}
+
+      - name: Package NuGet packages
+        run: |
+          mkdir -p ./artifacts/packages
+
+          # Package all library projects
+          for project in src/QuickApiMapper.Contracts \
+                        src/QuickApiMapper.Application \
+                        src/QuickApiMapper.Behaviors \
+                        src/QuickApiMapper.Persistence.Abstractions \
+                        src/QuickApiMapper.Persistence.PostgreSQL \
+                        src/QuickApiMapper.Persistence.SQLite \
+                        src/QuickApiMapper.MessageCapture.Abstractions \
+                        src/QuickApiMapper.MessageCapture.InMemory \
+                        src/QuickApiMapper.Extensions.gRPC \
+                        src/QuickApiMapper.Extensions.RabbitMQ \
+                        src/QuickApiMapper.Extensions.ServiceBus \
+                        src/QuickApiMapper.StandardTransformers \
+                        src/QuickApiMapper.CustomTransformers; do
+            if [ -d "$project" ]; then
+              echo "📦 Packing $project..."
+              dotnet pack "$project" \
+                --configuration Release \
+                --no-build \
+                --output ./artifacts/packages \
+                /p:PackageVersion=${{ needs.validate-release.outputs.version }} \
+                /p:RepositoryUrl=https://github.com/jerrettdavis/QuickApiMapper \
+                /p:RepositoryType=git \
+                /p:RepositoryCommit=${{ github.sha }} \
+                /p:PackageLicenseExpression=MIT \
+                /p:PackageProjectUrl=https://github.com/jerrettdavis/QuickApiMapper \
+                /p:PackageReadmeFile=README.md \
+                /p:ContinuousIntegrationBuild=true
+            fi
+          done
+
+          echo ""
+          echo "📦 Packages created:"
+          ls -lh ./artifacts/packages/
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages-release
+          path: ./artifacts/packages/*.nupkg
+          retention-days: 90
+
+  publish-executables:
+    name: Publish Executables (${{ matrix.rid }})
+    needs: [validate-release, build-and-test]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: ubuntu-latest
+            rid: linux-arm64
+          - os: windows-latest
+            rid: win-x64
+          - os: windows-latest
+            rid: win-arm64
+          - os: macos-latest
+            rid: osx-x64
+          - os: macos-latest
+            rid: osx-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish Management API
+        run: |
+          dotnet publish src/QuickApiMapper.Management.Api \
+            --configuration Release \
+            --runtime ${{ matrix.rid }} \
+            --self-contained true \
+            --output ./publish/management-api-${{ matrix.rid }} \
+            /p:PublishSingleFile=true \
+            /p:PublishTrimmed=true \
+            /p:Version=${{ needs.validate-release.outputs.version }}
+
+      - name: Publish Web API
+        run: |
+          dotnet publish src/QuickApiMapper.Web \
+            --configuration Release \
+            --runtime ${{ matrix.rid }} \
+            --self-contained true \
+            --output ./publish/web-api-${{ matrix.rid }} \
+            /p:PublishSingleFile=true \
+            /p:PublishTrimmed=true \
+            /p:Version=${{ needs.validate-release.outputs.version }}
+
+      - name: Publish Designer Web
+        run: |
+          dotnet publish src/QuickApiMapper.Designer.Web \
+            --configuration Release \
+            --runtime ${{ matrix.rid }} \
+            --self-contained true \
+            --output ./publish/designer-web-${{ matrix.rid }} \
+            /p:PublishSingleFile=true \
+            /p:PublishTrimmed=true \
+            /p:Version=${{ needs.validate-release.outputs.version }}
+
+      - name: Create archives (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd publish
+          tar -czf management-api-${{ matrix.rid }}.tar.gz management-api-${{ matrix.rid }}
+          tar -czf web-api-${{ matrix.rid }}.tar.gz web-api-${{ matrix.rid }}
+          tar -czf designer-web-${{ matrix.rid }}.tar.gz designer-web-${{ matrix.rid }}
+
+      - name: Create archives (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cd publish
+          Compress-Archive -Path management-api-${{ matrix.rid }} -DestinationPath management-api-${{ matrix.rid }}.zip
+          Compress-Archive -Path web-api-${{ matrix.rid }} -DestinationPath web-api-${{ matrix.rid }}.zip
+          Compress-Archive -Path designer-web-${{ matrix.rid }} -DestinationPath designer-web-${{ matrix.rid }}.zip
+
+      - name: Upload executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: executables-${{ matrix.rid }}
+          path: |
+            ./publish/*.tar.gz
+            ./publish/*.zip
+          retention-days: 90
+
+  publish-nuget:
+    name: Publish to NuGet.org
+    needs: [validate-release, package-nuget]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.version != '')
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages-release
+          path: ./packages
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "⚠️  NUGET_API_KEY not set. Skipping NuGet publish."
+            echo "To publish to NuGet.org, add NUGET_API_KEY to repository secrets."
+            exit 0
+          fi
+
+          echo "📤 Publishing packages to NuGet.org..."
+          for package in ./packages/*.nupkg; do
+            echo "  Publishing $(basename $package)..."
+            dotnet nuget push "$package" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate \
+              --no-symbols || echo "  ⚠️  Failed to push $(basename $package)"
+          done
+          echo "✅ NuGet publish completed"
+
+  create-github-release:
+    name: Create GitHub Release
+    needs: [validate-release, package-nuget, publish-executables]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./release-artifacts
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+
+          # Try to find previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "Generating changelog from $PREVIOUS_TAG to v$VERSION"
+            CHANGELOG=$(git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "No previous tag found, using all commits"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges | head -20)
+          fi
+
+          # Save changelog to file
+          cat > CHANGELOG.md << EOF
+          ## What's Changed
+
+          $CHANGELOG
+
+          ## Assets
+
+          ### NuGet Packages
+          Published to [NuGet.org](https://www.nuget.org/packages?q=QuickApiMapper)
+
+          ### Executables
+          Self-contained executables for:
+          - Linux (x64, ARM64)
+          - Windows (x64, ARM64)
+          - macOS (x64, ARM64)
+
+          **Full Changelog**: https://github.com/jerrettdavis/QuickApiMapper/compare/${PREVIOUS_TAG}...v${VERSION}
+          EOF
+
+          echo "changelog-file=CHANGELOG.md" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.validate-release.outputs.version }}
+          name: QuickApiMapper v${{ needs.validate-release.outputs.version }}
+          body_path: CHANGELOG.md
+          prerelease: ${{ needs.validate-release.outputs.is-prerelease }}
+          files: |
+            release-artifacts/nuget-packages-release/*.nupkg
+            release-artifacts/executables-*/*.tar.gz
+            release-artifacts/executables-*/*.zip
+          draft: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-github-packages:
+    name: Publish to GitHub Packages
+    needs: [validate-release, package-nuget]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages-release
+          path: ./packages
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📤 Publishing packages to GitHub Packages..."
+          for package in ./packages/*.nupkg; do
+            echo "  Publishing $(basename $package)..."
+            dotnet nuget push "$package" \
+              --api-key "$GITHUB_TOKEN" \
+              --source "https://nuget.pkg.github.com/jerrettdavis/index.json" \
+              --skip-duplicate || echo "  ⚠️  Failed to push $(basename $package)"
+          done
+          echo "✅ GitHub Packages publish completed"

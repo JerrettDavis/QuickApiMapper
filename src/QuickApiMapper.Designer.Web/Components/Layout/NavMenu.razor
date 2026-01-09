@@ -1,0 +1,76 @@
+<MudNavMenu Class="pa-2">
+    @* Overview Section *@
+    <MudText Typo="Typo.overline" Class="px-3 mt-2 mb-1" Color="Color.Secondary">Overview</MudText>
+
+    <MudNavLink Href="/"
+               Match="NavLinkMatch.All"
+               Icon="@Icons.Material.Filled.Dashboard"
+               IconColor="Color.Primary">
+        Dashboard
+    </MudNavLink>
+
+    @* Integration Management *@
+    <MudText Typo="Typo.overline" Class="px-3 mt-4 mb-1" Color="Color.Secondary">Management</MudText>
+
+    <MudNavLink Href="/integrations"
+               Match="NavLinkMatch.Prefix"
+               Icon="@Icons.Material.Filled.IntegrationInstructions"
+               IconColor="Color.Success">
+        Integrations
+        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-auto">@_integrationCount</MudChip>
+    </MudNavLink>
+
+    <MudNavLink Href="/create"
+               Match="NavLinkMatch.Prefix"
+               Icon="@Icons.Material.Filled.AddCircle"
+               IconColor="Color.Secondary">
+        Create New
+    </MudNavLink>
+
+    @* Resources *@
+    <MudText Typo="Typo.overline" Class="px-3 mt-4 mb-1" Color="Color.Secondary">Resources</MudText>
+
+    <MudNavLink Href="/transformers"
+               Match="NavLinkMatch.Prefix"
+               Icon="@Icons.Material.Filled.Transform"
+               IconColor="Color.Warning">
+        Transformers
+    </MudNavLink>
+
+    <MudNavLink Href="/behaviors"
+               Match="NavLinkMatch.Prefix"
+               Icon="@Icons.Material.Filled.Psychology"
+               IconColor="Color.Tertiary">
+        Behaviors
+    </MudNavLink>
+
+    @* System *@
+    <MudText Typo="Typo.overline" Class="px-3 mt-4 mb-1" Color="Color.Secondary">System</MudText>
+
+    <MudNavLink Href="/settings"
+               Match="NavLinkMatch.Prefix"
+               Icon="@Icons.Material.Filled.Settings"
+               IconColor="Color.Default">
+        Settings
+    </MudNavLink>
+</MudNavMenu>
+
+@using QuickApiMapper.Designer.Web.Services
+@inject IntegrationApiClient ApiClient
+
+@code {
+    private int _integrationCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var integrations = await ApiClient.GetAllIntegrationsAsync();
+            _integrationCount = integrations?.Count(i => i.IsActive) ?? 0;
+        }
+        catch
+        {
+            _integrationCount = 0;
+        }
+    }
+}

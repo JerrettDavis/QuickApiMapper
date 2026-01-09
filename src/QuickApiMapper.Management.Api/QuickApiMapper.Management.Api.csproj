@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
+    <PackageReference Include="AspNetCore.HealthChecks.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuickApiMapper.Contracts\QuickApiMapper.Contracts.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.MessageCapture.Abstractions\QuickApiMapper.MessageCapture.Abstractions.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.MessageCapture.InMemory\QuickApiMapper.MessageCapture.InMemory.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Persistence.Abstractions\QuickApiMapper.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Persistence.PostgreSQL\QuickApiMapper.Persistence.PostgreSQL.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Persistence.SQLite\QuickApiMapper.Persistence.SQLite.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Application\QuickApiMapper.Application.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Host.ServiceDefaults\QuickApiMapper.Host.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

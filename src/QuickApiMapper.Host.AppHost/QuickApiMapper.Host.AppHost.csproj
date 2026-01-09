@@ -1,0 +1,25 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>54fc8eba-0453-4e2c-aa33-dfcc6cb80105</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- QuickApiMapper applications -->
+    <ProjectReference Include="..\QuickApiMapper.Web\QuickApiMapper.Web.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Management.Api\QuickApiMapper.Management.Api.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Designer.Web\QuickApiMapper.Designer.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Aspire hosting packages for infrastructure -->
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+    <PackageReference Include="Aspire.Hosting.Redis" />
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,302 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.vscode/**'
+      - '.editorconfig'
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  validate-pr:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install Nerdbank.GitVersioning
+        run: dotnet tool install --global nbgv
+
+      - name: Set version
+        id: nbgv
+        run: |
+          nbgv cloud
+          VERSION=$(nbgv get-version -v SemVer2)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version: $VERSION"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: |
+          dotnet build \
+            --configuration Release \
+            --no-restore \
+            /p:ContinuousIntegrationBuild=true \
+            /p:Deterministic=true
+
+      - name: Run unit tests
+        run: |
+          dotnet test tests/QuickApiMapper.UnitTests \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=unit-tests.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults/Unit \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Run integration tests
+        run: |
+          dotnet test tests/QuickApiMapper.IntegrationTests \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=integration-tests.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults/Integration \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            TestResults/**/*.trx
+          check_name: Test Results
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./TestResults/**/coverage.opencover.xml
+          flags: unittests,integrationtests
+          name: pr-${{ github.event.pull_request.number }}
+          fail_ci_if_error: false
+
+      - name: Detect packages and executables
+        id: detect
+        run: |
+          echo "🔍 Detecting NuGet packages..."
+          PACKAGES=$(find src -name "*.csproj" -type f | while read proj; do
+            if grep -q "<IsPackable>true</IsPackable>" "$proj" 2>/dev/null || ! grep -q "<IsPackable>false</IsPackable>" "$proj" 2>/dev/null; then
+              if ! echo "$proj" | grep -qE "(Test|AppHost|Designer\.Web|Management\.Api|Web\.csproj|Host\.)"; then
+                basename $(dirname "$proj")
+              fi
+            fi
+          done | sort -u)
+
+          echo "📦 Detected NuGet Packages:"
+          echo "$PACKAGES" | while read pkg; do
+            echo "  - $pkg"
+          done
+
+          echo "🔍 Detecting executables..."
+          EXECUTABLES=$(find src -name "*.csproj" -type f | while read proj; do
+            if grep -q "<OutputType>Exe</OutputType>" "$proj" 2>/dev/null; then
+              basename $(dirname "$proj")
+            fi
+          done | sort -u)
+
+          echo "🚀 Detected Executables:"
+          echo "$EXECUTABLES" | while read exe; do
+            echo "  - $exe"
+          done
+
+          # Save for artifacts
+          echo "$PACKAGES" > detected-packages.txt
+          echo "$EXECUTABLES" > detected-executables.txt
+
+          PACKAGE_COUNT=$(echo "$PACKAGES" | wc -l)
+          EXECUTABLE_COUNT=$(echo "$EXECUTABLES" | wc -l)
+
+          echo "PACKAGE_COUNT=$PACKAGE_COUNT" >> $GITHUB_OUTPUT
+          echo "EXECUTABLE_COUNT=$EXECUTABLE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Dry-run NuGet packaging
+        run: |
+          echo "📦 Performing dry-run of NuGet packaging..."
+
+          mkdir -p ./dry-run-packages
+
+          # Package all library projects
+          for project in src/QuickApiMapper.Contracts \
+                        src/QuickApiMapper.Application \
+                        src/QuickApiMapper.Behaviors \
+                        src/QuickApiMapper.Persistence.Abstractions \
+                        src/QuickApiMapper.Persistence.PostgreSQL \
+                        src/QuickApiMapper.Persistence.SQLite \
+                        src/QuickApiMapper.MessageCapture.Abstractions \
+                        src/QuickApiMapper.MessageCapture.InMemory \
+                        src/QuickApiMapper.Extensions.gRPC \
+                        src/QuickApiMapper.Extensions.RabbitMQ \
+                        src/QuickApiMapper.Extensions.ServiceBus \
+                        src/QuickApiMapper.StandardTransformers \
+                        src/QuickApiMapper.CustomTransformers; do
+            if [ -d "$project" ]; then
+              echo "  Packing $project..."
+              dotnet pack "$project" \
+                --configuration Release \
+                --no-build \
+                --output ./dry-run-packages \
+                /p:PackageVersion=${{ steps.nbgv.outputs.VERSION }} \
+                /p:RepositoryUrl=https://github.com/jerrettdavis/QuickApiMapper \
+                /p:RepositoryType=git \
+                /p:ContinuousIntegrationBuild=true || echo "  ⚠️  Failed to pack $project"
+            fi
+          done
+
+          echo ""
+          echo "📊 Dry-run packaging summary:"
+          ls -lh ./dry-run-packages/*.nupkg 2>/dev/null || echo "  No packages created"
+
+      - name: Dry-run executable publishing
+        run: |
+          echo "🚀 Performing dry-run of executable publishing..."
+
+          mkdir -p ./dry-run-publish
+
+          # Publish Management API
+          if [ -d "src/QuickApiMapper.Management.Api" ]; then
+            echo "  Publishing Management API..."
+            dotnet publish src/QuickApiMapper.Management.Api \
+              --configuration Release \
+              --no-build \
+              --output ./dry-run-publish/management-api \
+              /p:PublishSingleFile=false \
+              /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Management API"
+          fi
+
+          # Publish Runtime Web API
+          if [ -d "src/QuickApiMapper.Web" ]; then
+            echo "  Publishing Web API..."
+            dotnet publish src/QuickApiMapper.Web \
+              --configuration Release \
+              --no-build \
+              --output ./dry-run-publish/web-api \
+              /p:PublishSingleFile=false \
+              /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Web API"
+          fi
+
+          # Publish Designer Web
+          if [ -d "src/QuickApiMapper.Designer.Web" ]; then
+            echo "  Publishing Designer Web..."
+            dotnet publish src/QuickApiMapper.Designer.Web \
+              --configuration Release \
+              --no-build \
+              --output ./dry-run-publish/designer-web \
+              /p:PublishSingleFile=false \
+              /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Designer Web"
+          fi
+
+          echo ""
+          echo "📊 Dry-run publishing summary:"
+          du -sh ./dry-run-publish/* 2>/dev/null || echo "  No executables published"
+
+      - name: Upload dry-run artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dry-run-artifacts-${{ github.event.pull_request.number }}
+          path: |
+            ./dry-run-packages/
+            ./dry-run-publish/
+            detected-packages.txt
+            detected-executables.txt
+          retention-days: 7
+
+      - name: Create PR comment
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+
+            const packages = fs.readFileSync('detected-packages.txt', 'utf8').trim().split('\n').filter(p => p);
+            const executables = fs.readFileSync('detected-executables.txt', 'utf8').trim().split('\n').filter(e => e);
+
+            const body = `## 🔍 PR Validation Results
+
+            **Version:** \`${{ steps.nbgv.outputs.VERSION }}\`
+
+            ### 📦 Detected NuGet Packages (${packages.length})
+            ${packages.map(p => `- \`${p}\``).join('\n')}
+
+            ### 🚀 Detected Executables (${executables.length})
+            ${executables.map(e => `- \`${e}\``).join('\n')}
+
+            ### ✅ Validation Steps
+            - [x] Build solution
+            - [x] Run unit tests
+            - [x] Run integration tests
+            - [x] Dry-run NuGet packaging
+            - [x] Dry-run executable publishing
+
+            ### 📊 Artifacts
+            Dry-run artifacts have been uploaded and will be available for 7 days.
+
+            ---
+            *This comment was automatically generated by the PR validation workflow.*
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('PR Validation Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }

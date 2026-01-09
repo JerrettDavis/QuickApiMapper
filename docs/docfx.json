@@ -1,0 +1,68 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": [
+            "src/QuickApiMapper.Contracts/**/*.csproj",
+            "src/QuickApiMapper.Application/**/*.csproj",
+            "src/QuickApiMapper.Behaviors/**/*.csproj",
+            "src/QuickApiMapper.Persistence.Abstractions/**/*.csproj",
+            "src/QuickApiMapper.MessageCapture.Abstractions/**/*.csproj",
+            "src/QuickApiMapper.MessageCapture.InMemory/**/*.csproj",
+            "src/QuickApiMapper.Extensions.gRPC/**/*.csproj",
+            "src/QuickApiMapper.Extensions.RabbitMQ/**/*.csproj",
+            "src/QuickApiMapper.Extensions.ServiceBus/**/*.csproj",
+            "src/QuickApiMapper.StandardTransformers/**/*.csproj",
+            "src/QuickApiMapper.CustomTransformers/**/*.csproj"
+          ],
+          "src": ".."
+        }
+      ],
+      "dest": "api",
+      "outputFormat": "mref",
+      "includePrivateMembers": false,
+      "disableGitFeatures": false,
+      "disableDefaultFilter": false,
+      "noRestore": false,
+      "namespaceLayout": "nested",
+      "memberLayout": "samePage",
+      "EnumSortOrder": "alphabetic"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "_site/**"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "default",
+      "modern"
+    ],
+    "globalMetadata": {
+      "_appTitle": "QuickApiMapper Documentation",
+      "_appName": "QuickApiMapper",
+      "_appFooter": "QuickApiMapper - API Integration and Mapping Framework",
+      "_enableSearch": true,
+      "_enableNewTab": true
+    },
+    "fileMetadata": {},
+    "postProcessors": [],
+    "keepFileLink": false,
+    "disableGitFeatures": false
+  }
+}

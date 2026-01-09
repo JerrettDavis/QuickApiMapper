@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="Moq" />
+        <PackageReference Include="Newtonsoft.Json" />
+        <PackageReference Include="NSubstitute" />
+        <PackageReference Include="NUnit" />
+        <PackageReference Include="NUnit.Analyzers">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="NUnit3TestAdapter" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="NUnit.Framework" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\QuickApiMapper.Behaviors\QuickApiMapper.Behaviors.csproj" />
+        <ProjectReference Include="..\..\src\QuickApiMapper.CustomTransformers\QuickApiMapper.CustomTransformers.csproj" />
+        <ProjectReference Include="..\..\src\QuickApiMapper.StandardTransformers\QuickApiMapper.StandardTransformers.csproj" />
+        <ProjectReference Include="..\..\src\QuickApiMapper.Web\QuickApiMapper.Web.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="Test_Data\CustomerIntegration\CustomerIntegration-Config.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Test_Data\CustomerIntegration\CustomerIntegration-ExpectedOutput.xml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Test_Data\CustomerIntegration\CustomerIntegration-Input.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Test_Data\VendorIntegration\VendorIntegration-Config.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Test_Data\VendorIntegration\VendorIntegration-ExpectedOutput.xml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Test_Data\VendorIntegration\VendorIntegration-Input.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+</Project>

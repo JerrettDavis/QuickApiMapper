@@ -1,0 +1,225 @@
+@using MudBlazor
+@using QuickApiMapper.Management.Api.Models
+@using QuickApiMapper.Designer.Web.Services
+@using Microsoft.JSInterop
+@inject IntegrationApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">Test Integration: @_integrationName</MudText>
+
+            <MudTabs Elevation="2" Rounded="true" ActivePanelIndex="@_activeTab" ActivePanelIndexChanged="@((int index) => _activeTab = index)">
+                <MudTabPanel Text="Input" Icon="@Icons.Material.Filled.Input">
+                    <MudStack Spacing="2" Class="pa-4">
+                        <MudTextField @bind-Value="_inputPayload"
+                                     Label="Sample Input Payload"
+                                     Variant="Variant.Outlined"
+                                     Lines="15"
+                                     Placeholder='{"orderId": "12345", "customer": {"name": "John Doe"}}'
+                                     HelperText="Enter a sample input payload to test the transformation" />
+
+                        <MudButton Color="Color.Success"
+                                  Variant="Variant.Filled"
+                                  StartIcon="@Icons.Material.Filled.PlayArrow"
+                                  OnClick="ExecuteTest"
+                                  Disabled="@(string.IsNullOrWhiteSpace(_inputPayload) || _isLoading)">
+                            @if (_isLoading)
+                            {
+                                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ms-2">Testing...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Test Transform</MudText>
+                            }
+                        </MudButton>
+                    </MudStack>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Output" Icon="@Icons.Material.Filled.Output">
+                    <MudStack Spacing="2" Class="pa-4">
+                        @if (!string.IsNullOrWhiteSpace(_outputPayload))
+                        {
+                            <MudTextField Value="@_outputPayload"
+                                         Label="Transformed Output"
+                                         Variant="Variant.Outlined"
+                                         Lines="15"
+                                         ReadOnly="true" />
+
+                            <MudButton Color="Color.Primary"
+                                      Variant="Variant.Text"
+                                      StartIcon="@Icons.Material.Filled.ContentCopy"
+                                      OnClick="CopyToClipboard">
+                                Copy to Clipboard
+                            </MudButton>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(_errorMessage))
+                        {
+                            <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                Run a test from the Input tab to see the transformed output here.
+                            </MudText>
+                        }
+                    </MudStack>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Debug" Icon="@Icons.Material.Filled.BugReport">
+                    <MudStack Spacing="2" Class="pa-4">
+                        @if (_metadata != null && _metadata.Any())
+                        {
+                            <MudText Typo="Typo.subtitle2">Metadata</MudText>
+                            <MudSimpleTable Dense="true" Bordered="true" Style="max-width: 600px;">
+                                <tbody>
+                                    @foreach (var kvp in _metadata)
+                                    {
+                                        <tr>
+                                            <td><strong>@kvp.Key</strong></td>
+                                            <td>@kvp.Value</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        }
+
+                        @if (_steps != null && _steps.Any())
+                        {
+                            <MudText Typo="Typo.subtitle2" Class="mt-4">Transformation Steps</MudText>
+                            <MudTable Items="@_steps" Dense="true" Hover="true" Bordered="true">
+                                <HeaderContent>
+                                    <MudTh>Field Path</MudTh>
+                                    <MudTh>Source Value</MudTh>
+                                    <MudTh>Transformed Value</MudTh>
+                                    <MudTh>Transformers</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Field Path">@context.FieldPath</MudTd>
+                                    <MudTd DataLabel="Source Value">@context.SourceValue</MudTd>
+                                    <MudTd DataLabel="Transformed Value">@context.TransformedValue</MudTd>
+                                    <MudTd DataLabel="Transformers">
+                                        @if (context.TransformersApplied != null && context.TransformersApplied.Any())
+                                        {
+                                            <MudChipSet T="string">
+                                                @foreach (var transformer in context.TransformersApplied)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small">@transformer</MudChip>
+                                                }
+                                            </MudChipSet>
+                                        }
+                                        else
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">None</MudText>
+                                        }
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+
+                        @if (_metadata == null && _steps == null)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                Debug information will appear here after running a test.
+                            </MudText>
+                        }
+                    </MudStack>
+                </MudTabPanel>
+            </MudTabs>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Guid IntegrationId { get; set; }
+    [Parameter] public string IntegrationName { get; set; } = string.Empty;
+
+    private int _activeTab = 0;
+    private string _integrationName = string.Empty;
+    private string _inputPayload = string.Empty;
+    private string _outputPayload = string.Empty;
+    private string _errorMessage = string.Empty;
+    private Dictionary<string, string>? _metadata;
+    private List<TransformationStep>? _steps;
+    private bool _isLoading = false;
+
+    protected override void OnInitialized()
+    {
+        _integrationName = IntegrationName;
+    }
+
+    private async Task ExecuteTest()
+    {
+        try
+        {
+            _isLoading = true;
+            _outputPayload = string.Empty;
+            _errorMessage = string.Empty;
+            _metadata = null;
+            _steps = null;
+            StateHasChanged();
+
+            var request = new TestMappingRequest
+            {
+                SamplePayload = _inputPayload
+            };
+
+            var response = await ApiClient.TestIntegrationAsync(IntegrationId, request);
+
+            if (response != null)
+            {
+                if (response.Success)
+                {
+                    _outputPayload = response.TransformedPayload ?? string.Empty;
+                    _metadata = response.Metadata;
+                    _steps = response.Steps;
+                    _activeTab = 1; // Switch to Output tab
+                    Snackbar.Add("Test completed successfully", Severity.Success);
+                }
+                else
+                {
+                    _errorMessage = response.Errors ?? "Test failed with unknown error";
+                    _activeTab = 1; // Switch to Output tab to show error
+                    Snackbar.Add("Test failed", Severity.Error);
+                }
+            }
+            else
+            {
+                _errorMessage = "Failed to communicate with the server";
+                Snackbar.Add("Test failed", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            Snackbar.Add($"Test error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _outputPayload);
+            Snackbar.Add("Copied to clipboard", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Failed to copy to clipboard", Severity.Warning);
+        }
+    }
+
+    private void Close() => MudDialog.Close();
+}

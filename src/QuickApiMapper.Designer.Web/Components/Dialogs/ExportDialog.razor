@@ -1,0 +1,124 @@
+@using MudBlazor
+@using System.Text.Json
+@using System.Text
+@inject IJSRuntime JSRuntime
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">Export Integrations</MudText>
+
+            <MudRadioGroup @bind-Value="_exportFormat">
+                <MudRadio Value="@("json")" Color="Color.Primary">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Code" />
+                        <div>
+                            <MudText Typo="Typo.body1">JSON Format</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                Full integration data with all mappings and configurations
+                            </MudText>
+                        </div>
+                    </MudStack>
+                </MudRadio>
+
+                <MudRadio Value="@("csv")" Color="Color.Primary">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.TableChart" />
+                        <div>
+                            <MudText Typo="Typo.body1">CSV Format</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                Summary view with basic integration information
+                            </MudText>
+                        </div>
+                    </MudStack>
+                </MudRadio>
+            </MudRadioGroup>
+
+            <MudSwitch @bind-Value="_includeInactive" Color="Color.Primary">
+                Include inactive integrations
+            </MudSwitch>
+
+            @if (_exportFormat == "json")
+            {
+                <MudSwitch @bind-Value="_prettyPrint" Color="Color.Primary">
+                    Pretty print (formatted with indentation)
+                </MudSwitch>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                  Variant="Variant.Filled"
+                  StartIcon="@Icons.Material.Filled.Download"
+                  OnClick="Export">
+            Export
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public List<Management.Api.Models.IntegrationDto> Integrations { get; set; } = new();
+
+    private string _exportFormat = "json";
+    private bool _includeInactive = false;
+    private bool _prettyPrint = true;
+
+    private async Task Export()
+    {
+        var data = _includeInactive
+            ? Integrations
+            : Integrations.Where(i => i.IsActive).ToList();
+
+        string content;
+        string fileName;
+        string mimeType;
+
+        if (_exportFormat == "json")
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = _prettyPrint,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+            content = JsonSerializer.Serialize(data, options);
+            fileName = $"integrations_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            mimeType = "application/json";
+        }
+        else // CSV
+        {
+            var csv = new StringBuilder();
+            csv.AppendLine("Name,Endpoint,SourceType,DestinationType,Status,Version,CreatedAt,UpdatedAt");
+
+            foreach (var integration in data)
+            {
+                csv.AppendLine($"\"{integration.Name}\",\"{integration.Endpoint}\",\"{integration.SourceType}\",\"{integration.DestinationType}\",\"{(integration.IsActive ? "Active" : "Inactive")}\",{integration.Version},\"{integration.CreatedAt:yyyy-MM-dd HH:mm:ss}\",\"{integration.UpdatedAt:yyyy-MM-dd HH:mm:ss}\"");
+            }
+
+            content = csv.ToString();
+            fileName = $"integrations_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            mimeType = "text/csv";
+        }
+
+        await DownloadFile(fileName, content, mimeType);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private async Task DownloadFile(string fileName, string content, string mimeType)
+    {
+        var bytes = Encoding.UTF8.GetBytes(content);
+        var base64 = Convert.ToBase64String(bytes);
+
+        await JSRuntime.InvokeVoidAsync("eval", $@"
+            const link = document.createElement('a');
+            link.download = '{fileName}';
+            link.href = 'data:{mimeType};base64,{base64}';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        ");
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

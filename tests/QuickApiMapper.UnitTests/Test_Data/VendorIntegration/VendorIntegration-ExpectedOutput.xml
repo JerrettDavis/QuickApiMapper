@@ -1,0 +1,41 @@
+<root>
+    <session alias="" email="" sendOnErrorOnly="true">
+        <state entity_name="vendor" use_cache="false" allow_save="true"
+               retry_on_error="true" max_retries="10">
+            <action name="sync">
+                <main>
+                    <row>
+                        <vendor_id>VEND001</vendor_id>
+                        <name>Global Supplies Ltd</name>
+                        <currency_code>USD</currency_code>
+                        <payment_terms_id>NET30</payment_terms_id>
+                        <region_id>US-WEST</region_id>
+                        <contact_email>accounts@example.com</contact_email>
+                        <is_active>Y</is_active>
+                    </row>
+                </main>
+                <addresses>
+                    <row>
+                        <street_address>456 Commerce Drive</street_address>
+                        <address_category>PRIMARY</address_category>
+                        <city>Portland</city>
+                        <postal_code>97201</postal_code>
+                        <country_code>US</country_code>
+                        <state_code>OR</state_code>
+                        <phone_number>555-987-6543</phone_number>
+                        <metadata>
+                            <item>
+                                <key>is_primary</key>
+                                <value>Y</value>
+                            </item>
+                            <item>
+                                <key>address_category</key>
+                                <value>PRIMARY</value>
+                            </item>
+                        </metadata>
+                    </row>
+                </addresses>
+            </action>
+        </state>
+    </session>
+</root>

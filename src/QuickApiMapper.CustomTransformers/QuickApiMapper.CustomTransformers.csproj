@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <ItemGroup>
+      <ProjectReference Include="..\QuickApiMapper.Contracts\QuickApiMapper.Contracts.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" />
+    </ItemGroup>
+
+    <Target Name="CopyStandardTransformersToWeb" AfterTargets="Build">
+        <Copy
+                SourceFiles="$(TargetPath)"
+                DestinationFolder="$(MSBuildThisFileDirectory)..\QuickApiMapper.Web\Transformers\"
+                SkipUnchangedFiles="true"/>
+    </Target>
+</Project>

@@ -1,0 +1,19 @@
+# Code Owners for QuickApiMapper
+# These users will be automatically requested for review when PRs are opened
+
+# Global owners
+* @jerrettdavis
+
+# Workflows and CI/CD
+/.github/ @jerrettdavis
+
+# Documentation
+/docs/ @jerrettdavis
+*.md @jerrettdavis
+
+# Core projects
+/src/QuickApiMapper.Contracts/ @jerrettdavis
+/src/QuickApiMapper.Application/ @jerrettdavis
+
+# Tests
+/tests/ @jerrettdavis

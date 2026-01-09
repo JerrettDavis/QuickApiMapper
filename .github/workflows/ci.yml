@@ -1,0 +1,392 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.vscode/**'
+      - '.editorconfig'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+permissions:
+  contents: write
+  packages: write
+  checks: write
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    outputs:
+      version: ${{ steps.nbgv.outputs.VERSION }}
+      nuget-version: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+      is-release: ${{ steps.nbgv.outputs.PublicRelease }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for GitVersion
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install Nerdbank.GitVersioning
+        run: dotnet tool install --global nbgv
+
+      - name: Set version
+        id: nbgv
+        run: |
+          VERSION=$(nbgv get-version -v SemVer2)
+          NUGET_VERSION=$(nbgv get-version -v NuGetPackageVersion)
+          PUBLIC_RELEASE=$(nbgv get-version -v PublicRelease)
+
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "NuGetPackageVersion=$NUGET_VERSION" >> $GITHUB_OUTPUT
+          echo "PublicRelease=$PUBLIC_RELEASE" >> $GITHUB_OUTPUT
+
+          echo "Version: $VERSION"
+          echo "NuGet Version: $NUGET_VERSION"
+          echo "Public Release: $PUBLIC_RELEASE"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: |
+          dotnet build \
+            --configuration Release \
+            --no-restore \
+            /p:ContinuousIntegrationBuild=true \
+            /p:Deterministic=true \
+            /p:Version=${{ steps.nbgv.outputs.VERSION }}
+
+      - name: Run unit tests
+        run: |
+          dotnet test tests/QuickApiMapper.UnitTests \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=unit-tests.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults/Unit \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Run integration tests
+        run: |
+          dotnet test tests/QuickApiMapper.IntegrationTests \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=integration-tests.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults/Integration \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            TestResults/**/*.trx
+          check_name: Test Results
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./TestResults/**/coverage.opencover.xml
+          flags: unittests,integrationtests
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Package NuGet packages
+        run: |
+          mkdir -p ./artifacts/packages
+
+          # Package all library projects
+          for project in src/QuickApiMapper.Contracts \
+                        src/QuickApiMapper.Application \
+                        src/QuickApiMapper.Behaviors \
+                        src/QuickApiMapper.Persistence.Abstractions \
+                        src/QuickApiMapper.Persistence.PostgreSQL \
+                        src/QuickApiMapper.Persistence.SQLite \
+                        src/QuickApiMapper.MessageCapture.Abstractions \
+                        src/QuickApiMapper.MessageCapture.InMemory \
+                        src/QuickApiMapper.Extensions.gRPC \
+                        src/QuickApiMapper.Extensions.RabbitMQ \
+                        src/QuickApiMapper.Extensions.ServiceBus \
+                        src/QuickApiMapper.StandardTransformers \
+                        src/QuickApiMapper.CustomTransformers; do
+            if [ -d "$project" ]; then
+              echo "Packing $project..."
+              dotnet pack "$project" \
+                --configuration Release \
+                --no-build \
+                --output ./artifacts/packages \
+                /p:PackageVersion=${{ steps.nbgv.outputs.NuGetPackageVersion }} \
+                /p:RepositoryUrl=https://github.com/jerrettdavis/QuickApiMapper \
+                /p:RepositoryType=git \
+                /p:RepositoryCommit=${{ github.sha }} \
+                /p:ContinuousIntegrationBuild=true
+            fi
+          done
+
+          echo "📦 Packages created:"
+          ls -lh ./artifacts/packages/
+
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/packages/*.nupkg
+          retention-days: 30
+
+  publish-executables:
+    name: Publish Executables
+    runs-on: ${{ matrix.os }}
+    needs: build-and-test
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact-name: linux-x64
+          - os: windows-latest
+            rid: win-x64
+            artifact-name: win-x64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish Management API
+        run: |
+          dotnet publish src/QuickApiMapper.Management.Api \
+            --configuration Release \
+            --runtime ${{ matrix.rid }} \
+            --self-contained false \
+            --output ./publish/management-api-${{ matrix.rid }} \
+            /p:PublishSingleFile=false \
+            /p:Version=${{ needs.build-and-test.outputs.version }}
+
+      - name: Publish Web API
+        run: |
+          dotnet publish src/QuickApiMapper.Web \
+            --configuration Release \
+            --runtime ${{ matrix.rid }} \
+            --self-contained false \
+            --output ./publish/web-api-${{ matrix.rid }} \
+            /p:PublishSingleFile=false \
+            /p:Version=${{ needs.build-and-test.outputs.version }}
+
+      - name: Publish Designer Web
+        run: |
+          dotnet publish src/QuickApiMapper.Designer.Web \
+            --configuration Release \
+            --runtime ${{ matrix.rid }} \
+            --self-contained false \
+            --output ./publish/designer-web-${{ matrix.rid }} \
+            /p:PublishSingleFile=false \
+            /p:Version=${{ needs.build-and-test.outputs.version }}
+
+      - name: Create archives (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd publish
+          tar -czf management-api-${{ matrix.rid }}.tar.gz management-api-${{ matrix.rid }}
+          tar -czf web-api-${{ matrix.rid }}.tar.gz web-api-${{ matrix.rid }}
+          tar -czf designer-web-${{ matrix.rid }}.tar.gz designer-web-${{ matrix.rid }}
+
+      - name: Create archives (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          cd publish
+          Compress-Archive -Path management-api-${{ matrix.rid }} -DestinationPath management-api-${{ matrix.rid }}.zip
+          Compress-Archive -Path web-api-${{ matrix.rid }} -DestinationPath web-api-${{ matrix.rid }}.zip
+          Compress-Archive -Path designer-web-${{ matrix.rid }} -DestinationPath designer-web-${{ matrix.rid }}.zip
+
+      - name: Upload executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: executables-${{ matrix.artifact-name }}
+          path: |
+            ./publish/*.tar.gz
+            ./publish/*.zip
+          retention-days: 30
+
+  auto-tag:
+    name: Auto Tag Release
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && needs.build-and-test.outputs.is-release == 'True'
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get last tag
+        id: last-tag
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "last_tag=$LAST_TAG" >> $GITHUB_OUTPUT
+
+          if [ -z "$LAST_TAG" ]; then
+            echo "📍 No previous tags found"
+          else
+            echo "📍 Last tag: $LAST_TAG"
+          fi
+
+      - name: Analyze commits for version bump
+        id: analyze
+        run: |
+          LAST_TAG="${{ steps.last-tag.outputs.last_tag }}"
+
+          # Get commits since last tag (or all commits if no tag exists)
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%s" --no-merges)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s" --no-merges)
+          fi
+
+          echo "📝 Analyzing commits for conventional commit patterns..."
+          echo "$COMMITS" | head -20
+
+          # Determine version bump type based on conventional commits
+          BUMP_TYPE="none"
+
+          # Check for breaking changes (BREAKING CHANGE in body or ! after type)
+          if echo "$COMMITS" | grep -qiE "(BREAKING CHANGE|^[a-z]+!(\(.*\))?:)"; then
+            BUMP_TYPE="major"
+            echo "🔴 Breaking changes detected - MAJOR version bump"
+          # Check for release commits
+          elif echo "$COMMITS" | grep -qiE "^release(\(.*\))?:"; then
+            BUMP_TYPE="minor"
+            echo "🟡 Release commit detected - MINOR version bump"
+          # Check for features
+          elif echo "$COMMITS" | grep -qiE "^feat(\(.*\))?:"; then
+            BUMP_TYPE="minor"
+            echo "🟢 Features detected - MINOR version bump"
+          # Check for fixes or performance improvements
+          elif echo "$COMMITS" | grep -qiE "^(fix|perf)(\(.*\))?:"; then
+            BUMP_TYPE="patch"
+            echo "🔵 Fixes/performance improvements detected - PATCH version bump"
+          else
+            echo "⚪ No conventional commits requiring version bump found"
+            echo "💡 Use feat:, fix:, perf:, or release: prefixes to trigger releases"
+          fi
+
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+
+      - name: Setup .NET
+        if: steps.analyze.outputs.bump_type != 'none'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install Nerdbank.GitVersioning
+        if: steps.analyze.outputs.bump_type != 'none'
+        run: dotnet tool install --global nbgv
+
+      - name: Get version and create tag
+        if: steps.analyze.outputs.bump_type != 'none'
+        id: create-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get current version from nbgv
+          VERSION=$(nbgv get-version -v SemVer2)
+          TAG="v${VERSION}"
+
+          echo "📦 Version: $VERSION"
+          echo "🏷️  Tag: $TAG"
+
+          # Check if tag already exists
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "⚠️  Tag $TAG already exists, skipping creation"
+            echo "tag_created=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Create tag using GitHub API
+          echo "Creating tag $TAG..."
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/git/refs \
+            -f ref="refs/tags/${TAG}" \
+            -f sha="${{ github.sha }}"
+
+          echo "tag_created=true" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          echo "✅ Tag $TAG created successfully"
+          echo "🚀 Release workflow will be triggered automatically"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Auto-Tag Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Bump Type:** ${{ steps.analyze.outputs.bump_type }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.analyze.outputs.bump_type }}" != "none" ]; then
+            if [ "${{ steps.create-tag.outputs.tag_created }}" == "true" ]; then
+              echo "**Tag Created:** ${{ steps.create-tag.outputs.tag_name }} ✅" >> $GITHUB_STEP_SUMMARY
+              echo "**Status:** Release workflow triggered 🚀" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Status:** Tag already exists, skipped ⚠️" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "**Status:** No version bump required" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ Use conventional commit prefixes to trigger releases:" >> $GITHUB_STEP_SUMMARY
+            echo "- \`feat:\` - New features (minor bump)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`fix:\` - Bug fixes (patch bump)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`perf:\` - Performance improvements (patch bump)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`release:\` - Release commits (minor bump)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`feat!:\` or \`BREAKING CHANGE:\` - Breaking changes (major bump)" >> $GITHUB_STEP_SUMMARY
+          fi

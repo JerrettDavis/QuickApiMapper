@@ -1,0 +1,205 @@
+@using MudBlazor
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">Import Schema</MudText>
+
+            <MudTabs Elevation="2" Rounded="true" ActivePanelIndex="@_activeTab" ActivePanelIndexChanged="@((int index) => _activeTab = index)">
+                <MudTabPanel Text="JSON Schema" Icon="@Icons.Material.Filled.Code">
+                    <MudStack Spacing="2" Class="pa-4">
+                        <MudTextField @bind-Value="_jsonSchema"
+                                     Label="JSON Schema or Example"
+                                     Variant="Variant.Outlined"
+                                     Lines="10"
+                                     Placeholder='{"customer": {"name": "John Doe", "email": "john@example.com"}}'
+                                     HelperText="Paste a JSON schema or example document" />
+
+                        <MudButton Color="Color.Primary"
+                                  Variant="Variant.Filled"
+                                  OnClick="ParseJsonSchema"
+                                  Disabled="@string.IsNullOrWhiteSpace(_jsonSchema)">
+                            Parse JSON
+                        </MudButton>
+                    </MudStack>
+                </MudTabPanel>
+
+                <MudTabPanel Text="XML/XSD" Icon="@Icons.Material.Filled.DataObject">
+                    <MudStack Spacing="2" Class="pa-4">
+                        <MudTextField @bind-Value="_xmlSchema"
+                                     Label="XML Schema or Example"
+                                     Variant="Variant.Outlined"
+                                     Lines="10"
+                                     Placeholder='<customer><name>John Doe</name><email>john@example.com</email></customer>'
+                                     HelperText="Paste an XSD or example XML document" />
+
+                        <MudButton Color="Color.Primary"
+                                  Variant="Variant.Filled"
+                                  OnClick="ParseXmlSchema"
+                                  Disabled="@string.IsNullOrWhiteSpace(_xmlSchema)">
+                            Parse XML
+                        </MudButton>
+                    </MudStack>
+                </MudTabPanel>
+
+                <MudTabPanel Text="URL Import" Icon="@Icons.Material.Filled.Link">
+                    <MudStack Spacing="2" Class="pa-4">
+                        <MudTextField @bind-Value="_schemaUrl"
+                                     Label="Schema URL"
+                                     Variant="Variant.Outlined"
+                                     Placeholder="https://api.example.com/schema.json"
+                                     HelperText="URL to fetch the schema from" />
+
+                        <MudButton Color="Color.Primary"
+                                  Variant="Variant.Filled"
+                                  OnClick="FetchSchemaFromUrl"
+                                  Disabled="@string.IsNullOrWhiteSpace(_schemaUrl)">
+                            Fetch Schema
+                        </MudButton>
+                    </MudStack>
+                </MudTabPanel>
+            </MudTabs>
+
+            @if (_parsedFields.Any())
+            {
+                <MudDivider Class="my-4" />
+                <MudText Typo="Typo.h6">Detected Fields (@_parsedFields.Count)</MudText>
+                <MudList T="string" Dense="true" Class="pa-2" Style="max-height: 300px; overflow-y: auto;">
+                    @foreach (var field in _parsedFields.Take(20))
+                    {
+                        <MudListItem T="string">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">@field</MudChip>
+                        </MudListItem>
+                    }
+                    @if (_parsedFields.Count > 20)
+                    {
+                        <MudListItem T="string">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                ... and @(_parsedFields.Count - 20) more fields
+                            </MudText>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                  Variant="Variant.Filled"
+                  OnClick="Submit"
+                  Disabled="@(!_parsedFields.Any())">
+            Import Fields
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private int _activeTab = 0;
+    private string _jsonSchema = string.Empty;
+    private string _xmlSchema = string.Empty;
+    private string _schemaUrl = string.Empty;
+    private List<string> _parsedFields = new();
+
+    private void ParseJsonSchema()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonDocument.Parse(_jsonSchema);
+            _parsedFields = ExtractJsonPaths(json.RootElement, "$").ToList();
+            Snackbar.Add($"Parsed {_parsedFields.Count} fields from JSON", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to parse JSON: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private IEnumerable<string> ExtractJsonPaths(System.Text.Json.JsonElement element, string currentPath)
+    {
+        switch (element.ValueKind)
+        {
+            case System.Text.Json.JsonValueKind.Object:
+                foreach (var property in element.EnumerateObject())
+                {
+                    var path = $"{currentPath}.{property.Name}";
+                    if (property.Value.ValueKind == System.Text.Json.JsonValueKind.Object ||
+                        property.Value.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var childPath in ExtractJsonPaths(property.Value, path))
+                        {
+                            yield return childPath;
+                        }
+                    }
+                    else
+                    {
+                        yield return path;
+                    }
+                }
+                break;
+
+            case System.Text.Json.JsonValueKind.Array:
+                yield return $"{currentPath}[0]";
+                if (element.GetArrayLength() > 0)
+                {
+                    foreach (var childPath in ExtractJsonPaths(element[0], $"{currentPath}[0]"))
+                    {
+                        yield return childPath;
+                    }
+                }
+                break;
+        }
+    }
+
+    private void ParseXmlSchema()
+    {
+        try
+        {
+            var xml = System.Xml.Linq.XDocument.Parse(_xmlSchema);
+            _parsedFields = ExtractXmlPaths(xml.Root!, "/").ToList();
+            Snackbar.Add($"Parsed {_parsedFields.Count} fields from XML", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to parse XML: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private IEnumerable<string> ExtractXmlPaths(System.Xml.Linq.XElement element, string currentPath)
+    {
+        var path = $"{currentPath}{element.Name.LocalName}";
+
+        // Add attributes
+        foreach (var attr in element.Attributes())
+        {
+            yield return $"{path}/@{attr.Name.LocalName}";
+        }
+
+        // Add child elements
+        if (element.HasElements)
+        {
+            foreach (var child in element.Elements())
+            {
+                foreach (var childPath in ExtractXmlPaths(child, $"{path}/"))
+                {
+                    yield return childPath;
+                }
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(element.Value))
+        {
+            yield return path;
+        }
+    }
+
+    private void FetchSchemaFromUrl()
+    {
+        Snackbar.Add("URL fetching coming soon - please paste schema directly", Severity.Info);
+    }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_parsedFields));
+    private void Cancel() => MudDialog.Cancel();
+}

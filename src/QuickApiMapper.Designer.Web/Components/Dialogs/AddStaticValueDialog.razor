@@ -1,0 +1,40 @@
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="Key"
+                         Label="Key"
+                         Variant="Variant.Outlined"
+                         HelperText="Unique identifier for this static value"
+                         Required="true" />
+
+            <MudTextField @bind-Value="Value"
+                         Label="Value"
+                         Variant="Variant.Outlined"
+                         HelperText="The value to be used in mappings"
+                         Required="true"
+                         Lines="3" />
+
+            <MudAlert Severity="Severity.Info" Dense="true">
+                Reference this value in mappings using: <code>$$.@Key</code>
+            </MudAlert>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(!IsValid)">Add</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string Key { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = string.Empty;
+
+    private bool IsValid => !string.IsNullOrWhiteSpace(Key) && !string.IsNullOrWhiteSpace(Value);
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(new KeyValuePair<string, string>(Key, Value)));
+    private void Cancel() => MudDialog.Cancel();
+}

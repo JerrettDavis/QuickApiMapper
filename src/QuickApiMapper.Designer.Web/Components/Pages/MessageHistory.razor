@@ -1,0 +1,352 @@
+@page "/integrations/{IntegrationId:guid}/messages"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Management.Api.Models
+@inject IntegrationApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Message History - QuickApiMapper Designer</PageTitle>
+
+<div class="fade-in">
+    @* Header Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">Message History</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                View captured input and output messages for @(_integration?.Name ?? "integration")
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Outlined"
+                  Color="Color.Default"
+                  StartIcon="@Icons.Material.Filled.ArrowBack"
+                  Href="@($"/integrations/{IntegrationId}")">
+            Back to Integration
+        </MudButton>
+    </MudStack>
+
+    @* Statistics Cards *@
+    @if (_statistics != null)
+    {
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Total Messages</MudText>
+                        <MudText Typo="Typo.h4" Class="font-bold">@_statistics.TotalMessages</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Success Rate</MudText>
+                        <MudText Typo="Typo.h4" Class="font-bold" Color="@GetSuccessRateColor(_statistics.SuccessRate)">
+                            @_statistics.SuccessRate.ToString("F1")%
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Successful</MudText>
+                        <MudText Typo="Typo.h4" Class="font-bold" Color="Color.Success">@_statistics.SuccessfulMessages</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Failed</MudText>
+                        <MudText Typo="Typo.h4" Class="font-bold" Color="Color.Error">@_statistics.FailedMessages</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+
+    @* Filters *@
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect @bind-Value="_filterDirection"
+                          Label="Direction"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          T="string">
+                    <MudSelectItem Value="@("All")">All</MudSelectItem>
+                    <MudSelectItem Value="@("Input")">Input</MudSelectItem>
+                    <MudSelectItem Value="@("Output")">Output</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect @bind-Value="_filterStatus"
+                          Label="Status"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          T="string">
+                    <MudSelectItem Value="@("All")">All</MudSelectItem>
+                    <MudSelectItem Value="@("Success")">Success</MudSelectItem>
+                    <MudSelectItem Value="@("Failed")">Failed</MudSelectItem>
+                    <MudSelectItem Value="@("Pending")">Pending</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudDatePicker @bind-Date="_filterStartDate"
+                              Label="Start Date"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudDatePicker @bind-Date="_filterEndDate"
+                              Label="End Date"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Clearable="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          OnClick="ApplyFilters"
+                          StartIcon="@Icons.Material.Filled.Search">
+                    Apply Filters
+                </MudButton>
+                <MudButton Variant="Variant.Text"
+                          Color="Color.Default"
+                          OnClick="ClearFilters"
+                          Class="ml-2">
+                    Clear
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @* Messages Table *@
+    <MudPaper Elevation="2" Class="overflow-hidden">
+        @if (_loading)
+        {
+            <div class="pa-8 text-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                <MudText Typo="Typo.body1" Class="mt-4">Loading messages...</MudText>
+            </div>
+        }
+        else if (_messages == null || !_messages.Any())
+        {
+            <div class="pa-8 text-center">
+                <MudIcon Icon="@Icons.Material.Filled.Message" Size="Size.Large" Color="Color.Secondary" />
+                <MudText Typo="Typo.h6" Class="mt-4">No messages found</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Messages will appear here as your integration processes requests
+                </MudText>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="@_messages" Hover="true" Dense="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Timestamp</MudTh>
+                    <MudTh>Direction</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Duration</MudTh>
+                    <MudTh>Correlation ID</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Timestamp">
+                        <MudText Typo="Typo.body2">@context.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Direction">
+                        <MudChip T="string" Size="Size.Small" Color="@GetDirectionColor(context.Direction)">
+                            @context.Direction
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">
+                            @context.Status
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Duration">
+                        @if (context.Duration.HasValue)
+                        {
+                            <MudText Typo="Typo.body2">@context.Duration.Value.TotalMilliseconds.ToString("F0")ms</MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">N/A</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Correlation ID">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace; font-size: 0.75rem;">
+                            @context.CorrelationId.Substring(0, Math.Min(8, context.CorrelationId.Length))...
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudTooltip Text="View Message">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                          Size="Size.Small"
+                                          Color="Color.Info"
+                                          OnClick="@(() => ViewMessage(context))" />
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            @* Pagination *@
+            <div class="pa-4 d-flex justify-space-between align-center">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Showing @((_currentPage - 1) * _pageSize + 1) to @Math.Min(_currentPage * _pageSize, _totalCount) of @_totalCount messages
+                </MudText>
+                <MudPagination Count="@_totalPages"
+                              Selected="@_currentPage"
+                              SelectedChanged="OnPageChanged"
+                              ShowFirstButton="true"
+                              ShowLastButton="true" />
+            </div>
+        }
+    </MudPaper>
+</div>
+
+@code {
+    [Parameter]
+    public Guid IntegrationId { get; set; }
+
+    private IntegrationDto? _integration;
+    private MessageStatisticsDto? _statistics;
+    private List<CapturedMessageDto> _messages = new();
+    private bool _loading = true;
+
+    private string _filterDirection = "All";
+    private string _filterStatus = "All";
+    private DateTime? _filterStartDate;
+    private DateTime? _filterEndDate;
+
+    private int _currentPage = 1;
+    private int _pageSize = 50;
+    private int _totalCount = 0;
+    private int _totalPages = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadIntegrationAsync();
+        await LoadStatisticsAsync();
+        await LoadMessagesAsync();
+    }
+
+    private async Task LoadIntegrationAsync()
+    {
+        try
+        {
+            _integration = await ApiClient.GetIntegrationByIdAsync(IntegrationId);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading integration: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadStatisticsAsync()
+    {
+        try
+        {
+            _statistics = await ApiClient.GetMessageStatisticsAsync(IntegrationId, _filterStartDate, _filterEndDate);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading statistics: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadMessagesAsync()
+    {
+        try
+        {
+            _loading = true;
+            var direction = _filterDirection == "All" ? null : _filterDirection;
+            var status = _filterStatus == "All" ? null : _filterStatus;
+
+            var result = await ApiClient.QueryMessagesAsync(
+                IntegrationId,
+                direction,
+                status,
+                _filterStartDate,
+                _filterEndDate,
+                null,
+                _currentPage,
+                _pageSize);
+
+            if (result != null)
+            {
+                _messages = result.Items;
+                _totalCount = result.TotalCount;
+                _totalPages = result.TotalPages;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading messages: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _currentPage = 1;
+        await LoadStatisticsAsync();
+        await LoadMessagesAsync();
+    }
+
+    private async Task ClearFilters()
+    {
+        _filterDirection = "All";
+        _filterStatus = "All";
+        _filterStartDate = null;
+        _filterEndDate = null;
+        _currentPage = 1;
+        await LoadStatisticsAsync();
+        await LoadMessagesAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadMessagesAsync();
+    }
+
+    private void ViewMessage(CapturedMessageDto message)
+    {
+        // TODO: Open dialog to show full message payload
+        Snackbar.Add($"Viewing message {message.Id}", Severity.Info);
+    }
+
+    private Color GetDirectionColor(string direction)
+    {
+        return direction switch
+        {
+            "Input" => Color.Primary,
+            "Output" => Color.Secondary,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Success" => Color.Success,
+            "Failed" => Color.Error,
+            "Pending" => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetSuccessRateColor(double successRate)
+    {
+        if (successRate >= 95) return Color.Success;
+        if (successRate >= 80) return Color.Warning;
+        return Color.Error;
+    }
+}

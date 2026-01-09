@@ -1,0 +1,52 @@
+{
+  "interface": "CUST_SYNC",
+  "direction": "OUTBOUND",
+  "sender": "ERP_SYSTEM",
+  "sender_message_id": null,
+  "receiver": "CRM_SYSTEM",
+  "customerinfo": [
+    {
+      "customer_id": "CUST001",
+      "customer_name": "Acme Corporation",
+      "address": [
+        {
+          "address_type": "Invoice",
+          "address_1": "123 Main Street",
+          "address_2": "Suite 100",
+          "city": "Springfield",
+          "state": "IL",
+          "county": null,
+          "zip_code": "62701",
+          "country_code": "US",
+          "exempt_code": "Tax Exemption None"
+        }
+      ],
+      "communication": [
+        {
+          "comm_type": "Email",
+          "comm_value": "billing@example.com"
+        },
+        {
+          "comm_type": "Phone",
+          "comm_value": "555-123-4567"
+        }
+      ],
+      "invoice": [
+        {
+          "company": "Example Systems Inc",
+          "currency": "USD",
+          "customer_group": "Standard",
+          "payment_terms": "NET30",
+          "credit_limit": "50000.00",
+          "credit_blocked": false
+        }
+      ],
+      "sales": [
+        {
+          "customer_stat_grp": "Retail",
+          "node": "US-CENTRAL"
+        }
+      ]
+    }
+  ]
+}

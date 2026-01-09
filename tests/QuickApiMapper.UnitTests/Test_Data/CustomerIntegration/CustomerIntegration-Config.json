@@ -1,0 +1,165 @@
+{
+  "Mappings": [
+    {
+      "Name": "CustomerIntegration",
+      "Endpoint": "/CustomerIntegration",
+      "SourceType": "JSON",
+      "DestinationType": "SOAP",
+      "DestinationUrl": "https://example.com/api/customer-service",
+      "PayloadArguments": [
+        {
+          "Type": "DefaultNamespace",
+          "Value": "urn:example.com:services:customer/v1.0"
+        },
+        {
+          "Type": "Namespace",
+          "Value": "http://schemas.xmlsoap.org/soap/envelope/"
+        }
+      ],
+      "DispatchFor": "$.customerinfo",
+      "StaticValues": {
+        "Priority": "1",
+        "PriceBook": "STANDARD",
+        "True": "true",
+        "False": "false",
+        "StatusCode": "A",
+        "CreatedBy": "System User",
+        "AddressCategoryLabel": "address_category",
+        "AddressCategory": "PRIMARY",
+        "EntityName": "customer",
+        "SessionAlias": "",
+        "SessionEmail": "",
+        "ActionName": "sync",
+        "Y": "Y",
+        "N": "N"
+      },
+      "Mapping": [
+        {"Source": "$.interface"},
+        {"Source": "$.direction" },
+        {"Source": "$.sender"},
+        {"Source": "$.sender_message_id"},
+        {"Source": "$.receiver"},
+        {
+          "Source": "$$.SessionAlias",
+          "Destination": "/root/session/@alias"
+        },
+        {
+          "Source": "$$.SessionEmail",
+          "Destination": "/root/session/@email"
+        },
+        {
+          "Source": "$$.EntityName",
+          "Destination": "/root/session/state/@entity_name"
+        },
+        {
+          "Source": "$$.ActionName",
+          "Destination": "/root/session/state/action/@name"
+        },
+        {
+          "Source": "$.customerinfo[0].customer_id",
+          "Destination": "/root/session/state/action/main/row/customer_id"
+        },
+        {
+          "Source": "$.customerinfo[0].invoice[0].credit_limit",
+          "Destination": "/root/session/state/action/main/row/credit_limit"
+        },
+        {
+          "Source": "$.customerinfo[0].sales[0].node",
+          "Destination": "/root/session/state/action/main/row/region_id"
+        },
+        {
+          "Source": "$$.Priority",
+          "Destination": "/root/session/state/action/main/row/priority"
+        },
+        {
+          "Source": "$.customerinfo[0].sales[0].node",
+          "Destination": "/root/session/state/action/main/row/sales_region_id"
+        },
+        {
+          "Source": "$.customerinfo[0].customer_name",
+          "Destination": "/root/session/state/action/main/row/name"
+        },
+        {
+          "Source": "$.customerinfo[0].invoice[0].currency",
+          "Destination": "/root/session/state/action/main/row/currency_code"
+        },
+        {
+          "Source": "$$.PriceBook",
+          "Destination": "/root/session/state/action/main/row/price_book_id"
+        },
+        {
+          "Source": "$$.Y",
+          "Destination": "/root/session/state/action/main/row/is_active"
+        },
+        {
+          "Source": "$$.N",
+          "Destination": "/root/session/state/action/main/row/is_credit_hold"
+        },
+        {
+          "Source": "$$.Y",
+          "Destination": "/root/session/state/action/main/row/is_verified"
+        },
+        {
+          "Source": "$$.N",
+          "Destination": "/root/session/state/action/main/row/is_branch"
+        },
+        {
+          "Source": "$.customerinfo[0].invoice[0].payment_terms",
+          "Destination": "/root/session/state/action/main/row/payment_terms_id"
+        },
+        {
+          "Source": "$$.StatusCode",
+          "Destination": "/root/session/state/action/main/row/status_code"
+        },
+        {
+          "Source": "$.customerinfo[0].communication[?(@.comm_type == 'Email')].comm_value",
+          "Destination": "/root/session/state/action/main/row/billing_email"
+        },
+        {
+          "Source": "$$.CreatedBy",
+          "Destination": "/root/session/state/action/main/row/created_by"
+        },
+        {
+          "Source": "$.customerinfo[0].address[?(@.address_type == 'Invoice')].address_1",
+          "Destination": "/root/session/state/action/addresses/row/street_address"
+        },
+        {
+          "Source": "$$.AddressCategory",
+          "Destination": "/root/session/state/action/addresses/row/address_category"
+        },
+        {
+          "Source": "$$.StatusCode",
+          "Destination": "/root/session/state/action/addresses/row/validation_status"
+        },
+        {
+          "Source": "$.customerinfo[0].address[?(@.address_type == 'Invoice')].city",
+          "Destination": "/root/session/state/action/addresses/row/city"
+        },
+        {
+          "Source": "$.customerinfo[0].address[?(@.address_type == 'Invoice')].country_code",
+          "Destination": "/root/session/state/action/addresses/row/country_code"
+        },
+        {
+          "Source": "$.customerinfo[0].communication[?(@.comm_type == 'Phone')].comm_value",
+          "Destination": "/root/session/state/action/addresses/row/phone_number"
+        },
+        {
+          "Source": "$.customerinfo[0].address[?(@.address_type == 'Invoice')].state",
+          "Destination": "/root/session/state/action/addresses/row/state_code"
+        },
+        {
+          "Source": "$.customerinfo[0].address[?(@.address_type == 'Invoice')].zip_code",
+          "Destination": "/root/session/state/action/addresses/row/postal_code"
+        },
+        {
+          "Source": "$$.AddressCategoryLabel",
+          "Destination": "/root/session/state/action/addresses/row/metadata/item/key"
+        },
+        {
+          "Source": "$$.AddressCategory",
+          "Destination": "/root/session/state/action/addresses/row/metadata/item/value"
+        }
+      ]
+    }
+  ]
+}

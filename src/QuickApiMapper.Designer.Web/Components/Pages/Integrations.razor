@@ -1,0 +1,388 @@
+@page "/integrations"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Designer.Web.Components.Dialogs
+@using QuickApiMapper.Management.Api.Models
+@inject IntegrationApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+
+<PageTitle>Integrations - QuickApiMapper Designer</PageTitle>
+
+<div class="fade-in">
+    @* Header Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">Integrations</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Manage and monitor your API integration mappings
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                  Color="Color.Primary"
+                  StartIcon="@Icons.Material.Filled.Add"
+                  Size="Size.Large"
+                  Href="/create"
+                  Class="px-6">
+            Create Integration
+        </MudButton>
+    </MudStack>
+
+    @* Error Message *@
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4" CloseIconClicked="() => _errorMessage = null" CloseIcon="@Icons.Material.Filled.Close">
+            @_errorMessage
+        </MudAlert>
+    }
+
+    @* Search and Filters *@
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudGrid Spacing="3">
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_searchString"
+                             Placeholder="Search integrations..."
+                             Adornment="Adornment.Start"
+                             AdornmentIcon="@Icons.Material.Filled.Search"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Immediate="true"
+                             Clearable="true"
+                             DebounceInterval="300" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect @bind-Value="_filterStatus"
+                          Label="Status"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          T="string">
+                    <MudSelectItem Value="@("All")">All Status</MudSelectItem>
+                    <MudSelectItem Value="@("Active")">Active Only</MudSelectItem>
+                    <MudSelectItem Value="@("Inactive")">Inactive Only</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect @bind-Value="_filterSourceType"
+                          Label="Source Type"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          T="string">
+                    <MudSelectItem Value="@("All")">All Types</MudSelectItem>
+                    <MudSelectItem Value="@("JSON")">JSON</MudSelectItem>
+                    <MudSelectItem Value="@("XML")">XML</MudSelectItem>
+                    <MudSelectItem Value="@("SOAP")">SOAP</MudSelectItem>
+                    <MudSelectItem Value="@("gRPC")">gRPC</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @* Integrations Table *@
+    @if (_loading)
+    {
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="mt-4">Loading integrations...</MudText>
+        </MudPaper>
+    }
+    else if (FilteredIntegrations == null || !FilteredIntegrations.Any())
+    {
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudStack Spacing="4" AlignItems="AlignItems.Center" Class="py-8">
+                <MudIcon Icon="@Icons.Material.Filled.SearchOff"
+                        Size="Size.Large"
+                        Color="Color.Secondary"
+                        Style="font-size: 4rem;" />
+                <MudText Typo="Typo.h5" Align="Align.Center">No Integrations Found</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                    @if (!string.IsNullOrWhiteSpace(_searchString))
+                    {
+                        <text>No integrations match your search criteria. Try adjusting your filters.</text>
+                    }
+                    else
+                    {
+                        <text>Get started by creating your first API integration.</text>
+                    }
+                </MudText>
+                @if (string.IsNullOrWhiteSpace(_searchString))
+                {
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              StartIcon="@Icons.Material.Filled.Add"
+                              Size="Size.Large"
+                              Href="/create">
+                        Create Your First Integration
+                    </MudButton>
+                }
+            </MudStack>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <MudText Typo="Typo.body1" Color="Color.Secondary">
+                    Showing <strong>@FilteredIntegrations.Count()</strong> of <strong>@(_integrations?.Count ?? 0)</strong> integrations
+                </MudText>
+                <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                    <MudTooltip Text="Refresh">
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                      OnClick="@LoadIntegrations" />
+                    </MudTooltip>
+                    <MudTooltip Text="Export">
+                        <MudIconButton Icon="@Icons.Material.Filled.Download"
+                                      OnClick="@ExportIntegrations" />
+                    </MudTooltip>
+                </MudButtonGroup>
+            </MudStack>
+
+            <MudTable Items="@FilteredIntegrations"
+                     Hover="true"
+                     Breakpoint="Breakpoint.Sm"
+                     Elevation="0"
+                     Class="rounded-lg">
+                <HeaderContent>
+                    <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Name</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Endpoint</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Integration Flow</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Status</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Last Updated</MudText></MudTh>
+                    <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Actions</MudText></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.body1" Class="font-semibold">@context.Name</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">v@(context.Version)</MudText>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Endpoint">
+                        <MudChip T="string"
+                                Size="Size.Small"
+                                Variant="Variant.Outlined"
+                                Icon="@Icons.Material.Filled.Api">
+                            @context.Endpoint
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Integration Flow">
+                        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Icon="@Icons.Material.Filled.Input">
+                                @context.SourceType
+                            </MudChip>
+                            <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Color="Color.Secondary" />
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.Output">
+                                @context.DestinationType
+                            </MudChip>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        @if (context.IsActive)
+                        {
+                            <MudChip T="string"
+                                    Size="Size.Small"
+                                    Color="Color.Success"
+                                    Icon="@Icons.Material.Filled.CheckCircle">
+                                Active
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string"
+                                    Size="Size.Small"
+                                    Color="Color.Default"
+                                    Icon="@Icons.Material.Filled.PauseCircle">
+                                Inactive
+                            </MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Last Updated">
+                        <MudText Typo="Typo.body2">@context.UpdatedAt.ToLocalTime().ToString("g")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudStack Row="true" Spacing="1">
+                            <MudTooltip Text="Test">
+                                <MudIconButton Icon="@Icons.Material.Filled.PlayArrow"
+                                              Color="Color.Success"
+                                              Size="Size.Small"
+                                              OnClick="@(() => TestIntegration(context))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Edit">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                              Color="Color.Primary"
+                                              Size="Size.Small"
+                                              OnClick="@(() => EditIntegration(context.Id))" />
+                            </MudTooltip>
+                            <MudTooltip Text="View Details">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                              Color="Color.Info"
+                                              Size="Size.Small"
+                                              OnClick="@(() => ViewIntegrationDetails(context.Id))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Delete">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                              Color="Color.Error"
+                                              Size="Size.Small"
+                                              OnClick="@(() => ConfirmDelete(context))" />
+                            </MudTooltip>
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+</div>
+
+@code {
+    private List<IntegrationDto>? _integrations;
+    private bool _loading = true;
+    private string? _errorMessage;
+    private string _searchString = string.Empty;
+    private string _filterStatus = "All";
+    private string _filterSourceType = "All";
+
+    private IEnumerable<IntegrationDto> FilteredIntegrations
+    {
+        get
+        {
+            if (_integrations == null)
+                return Enumerable.Empty<IntegrationDto>();
+
+            var filtered = _integrations.AsEnumerable();
+
+            // Apply search filter
+            if (!string.IsNullOrWhiteSpace(_searchString))
+            {
+                filtered = filtered.Where(i =>
+                    i.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                    i.Endpoint.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                    i.SourceType.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                    i.DestinationType.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Apply status filter
+            if (_filterStatus != "All")
+            {
+                var isActive = _filterStatus == "Active";
+                filtered = filtered.Where(i => i.IsActive == isActive);
+            }
+
+            // Apply source type filter
+            if (_filterSourceType != "All")
+            {
+                filtered = filtered.Where(i => i.SourceType.Equals(_filterSourceType, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return filtered;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await LoadIntegrations();
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task LoadIntegrations()
+    {
+        _loading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            _integrations = await ApiClient.GetAllIntegrationsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load integrations: {ex.Message}";
+            Snackbar.Add($"Error loading integrations: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Error loading integrations: {ex}");
+            _integrations = new List<IntegrationDto>();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void EditIntegration(Guid id)
+    {
+        Navigation.NavigateTo($"/edit/{id}");
+    }
+
+    private void ViewIntegrationDetails(Guid id)
+    {
+        Navigation.NavigateTo($"/integrations/{id}");
+    }
+
+    private async Task ConfirmDelete(IntegrationDto integration)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            $"Are you sure you want to delete the integration '{integration.Name}'? This action cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                var deleted = await ApiClient.DeleteIntegrationAsync(integration.Id);
+                if (deleted)
+                {
+                    Snackbar.Add($"Integration '{integration.Name}' deleted successfully", Severity.Success);
+                    await LoadIntegrations();
+                }
+                else
+                {
+                    Snackbar.Add($"Failed to delete integration '{integration.Name}'", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error deleting integration: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task TestIntegration(IntegrationDto integration)
+    {
+        var parameters = new DialogParameters<TestIntegrationDialog>
+        {
+            { x => x.IntegrationId, integration.Id },
+            { x => x.IntegrationName, integration.Name }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        };
+
+        await DialogService.ShowAsync<TestIntegrationDialog>($"Test Integration", parameters, options);
+    }
+
+    private async Task ExportIntegrations()
+    {
+        if (_integrations == null || !_integrations.Any())
+        {
+            Snackbar.Add("No integrations to export", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters<ExportDialog>
+        {
+            { x => x.Integrations, _integrations }
+        };
+
+        await DialogService.ShowAsync<ExportDialog>("Export Integrations", parameters);
+    }
+}

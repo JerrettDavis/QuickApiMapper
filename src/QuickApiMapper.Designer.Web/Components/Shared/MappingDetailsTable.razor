@@ -1,0 +1,93 @@
+@using QuickApiMapper.Management.Api.Models
+
+<MudTable Items="@FieldMappings" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true">
+    <HeaderContent>
+        <MudTh>Order</MudTh>
+        <MudTh>Source</MudTh>
+        <MudTh>Destination</MudTh>
+        <MudTh>Transformers</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Order">
+            <MudChip T="string" Size="Size.Small" Color="Color.Primary">@context.Order</MudChip>
+        </MudTd>
+        <MudTd DataLabel="Source">
+            <MudChip T="string" Size="Size.Small"
+                     Color="@GetPathColor(context.Source)"
+                     Variant="Variant.Outlined">
+                @context.Source
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="Destination">
+            @if (!string.IsNullOrEmpty(context.Destination))
+            {
+                <MudChip T="string" Size="Size.Small"
+                         Color="@GetPathColor(context.Destination)"
+                         Variant="Variant.Outlined">
+                    @context.Destination
+                </MudChip>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">-</MudText>
+            }
+        </MudTd>
+        <MudTd DataLabel="Transformers">
+            @if (context.Transformers != null && context.Transformers.Any())
+            {
+                <MudTooltip Text="@GetTransformersTooltip(context.Transformers)">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                        @context.Transformers.Count transformer(s)
+                    </MudChip>
+                </MudTooltip>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">None</MudText>
+            }
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    [Parameter]
+    public List<FieldMappingDto>? FieldMappings { get; set; }
+
+    private Color GetPathColor(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return Color.Default;
+
+        // Static values ($$variable)
+        if (path.StartsWith("$$"))
+            return Color.Warning;
+
+        // JSON paths ($.path)
+        if (path.StartsWith("$."))
+            return Color.Info;
+
+        // XPath (/path)
+        if (path.StartsWith("/"))
+            return Color.Success;
+
+        return Color.Default;
+    }
+
+    private string GetTransformersTooltip(List<TransformerDto> transformers)
+    {
+        if (transformers == null || !transformers.Any())
+            return "No transformers";
+
+        var tooltip = string.Join("\n", transformers
+            .OrderBy(t => t.Order)
+            .Select(t =>
+            {
+                var args = t.Arguments != null && t.Arguments.Any()
+                    ? $" ({string.Join(", ", t.Arguments.Select(kvp => $"{kvp.Key}={kvp.Value}"))})"
+                    : "";
+                return $"{t.Order}. {t.Name}{args}";
+            }));
+
+        return tooltip;
+    }
+}

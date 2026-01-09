@@ -1,0 +1,359 @@
+@page "/integrations/{id:guid}"
+@using QuickApiMapper.Management.Api.Models
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Designer.Web.Components.Dialogs
+@inject IntegrationApiClient ApiClient
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+
+<PageTitle>@(_integration?.Name ?? "Integration Details") - QuickApiMapper Designer</PageTitle>
+
+@if (_loading)
+{
+    <MudPaper Elevation="2" Class="pa-6">
+        <MudStack Spacing="3">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="60px" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="200px" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="300px" />
+        </MudStack>
+    </MudPaper>
+}
+else if (_integration == null)
+{
+    <MudAlert Severity="Severity.Error" Class="my-4">
+        Integration not found. It may have been deleted.
+    </MudAlert>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/integrations">
+        Back to Integrations
+    </MudButton>
+}
+else
+{
+    <div class="fade-in">
+        @* Header *@
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+            <div>
+                <MudBreadcrumbs Items="_breadcrumbs" Class="mb-2"></MudBreadcrumbs>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText Typo="Typo.h3" Class="font-bold">@_integration.Name</MudText>
+                    <MudChip T="string" Color="@(_integration.IsActive ? Color.Success : Color.Default)"
+                             Size="Size.Medium">
+                        @(_integration.IsActive ? "Active" : "Inactive")
+                    </MudChip>
+                </MudStack>
+            </div>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.ArrowBack"
+                           Href="/integrations">
+                    Back
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.History"
+                           Href="@($"/integrations/{Id}/messages")">
+                    Message History
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.PlayArrow"
+                           OnClick="OpenTestDialog">
+                    Test Integration
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           Href="@($"/edit/{Id}")">
+                    Edit
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        @* Overview Card *@
+        <MudPaper Elevation="2" Class="pa-6 mb-4">
+            <MudText Typo="Typo.h5" Class="mb-4">Overview</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.body1"><strong>Endpoint:</strong> @_integration.Endpoint</MudText>
+                        <MudText Typo="Typo.body1"><strong>Version:</strong> @_integration.Version</MudText>
+                        <MudText Typo="Typo.body1">
+                            <strong>Created:</strong> @_integration.CreatedAt.ToString("g")
+                        </MudText>
+                        <MudText Typo="Typo.body1">
+                            <strong>Last Updated:</strong> @_integration.UpdatedAt.ToString("g")
+                        </MudText>
+                    </MudStack>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+                        <MudChip T="string" Size="Size.Medium" Color="Color.Info">@_integration.SourceType</MudChip>
+                        <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Large" />
+                        <MudChip T="string" Size="Size.Medium" Color="Color.Success">@_integration.DestinationType</MudChip>
+                    </MudStack>
+                    <MudText Typo="Typo.body1"><strong>Destination URL:</strong></MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_integration.DestinationUrl</MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @* Control Toggles Card *@
+        <MudPaper Elevation="2" Class="pa-6 mb-4">
+            <MudText Typo="Typo.h5" Class="mb-4">Control Toggles</MudText>
+            <MudGrid>
+                <MudItem xs="12" sm="4">
+                    <MudSwitch T="bool"
+                              Value="_integration.EnableInput"
+                              ValueChanged="@((bool newValue) => UpdateToggle("EnableInput", newValue))"
+                              Color="Color.Primary"
+                              Label="Enable Input"
+                              Disabled="@_updatingToggles" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="ml-8">
+                        When disabled, incoming requests return 503 Service Unavailable
+                    </MudText>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudSwitch T="bool"
+                              Value="_integration.EnableOutput"
+                              ValueChanged="@((bool newValue) => UpdateToggle("EnableOutput", newValue))"
+                              Color="Color.Primary"
+                              Label="Enable Output"
+                              Disabled="@_updatingToggles" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="ml-8">
+                        When disabled, messages are captured but not forwarded to destination
+                    </MudText>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudSwitch T="bool"
+                              Value="_integration.EnableMessageCapture"
+                              ValueChanged="@((bool newValue) => UpdateToggle("EnableMessageCapture", newValue))"
+                              Color="Color.Primary"
+                              Label="Enable Message Capture"
+                              Disabled="@_updatingToggles" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="ml-8">
+                        When disabled, messages are not stored in message history
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @* Schema Examples *@
+        @if (_integration.FieldMappings?.Any() == true)
+        {
+            <MudText Typo="Typo.h5" Class="mb-4">Schema Examples</MudText>
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="6">
+                    <SchemaPreview SourceType="@_integration.SourceType"
+                                  FieldMappings="@_integration.FieldMappings"
+                                  StaticValues="@_integration.StaticValues"
+                                  Title="Source Schema"
+                                  IsSource="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <SchemaPreview SourceType="@_integration.DestinationType"
+                                  FieldMappings="@_integration.FieldMappings"
+                                  StaticValues="@_integration.StaticValues"
+                                  Title="Destination Schema"
+                                  IsSource="false" />
+                </MudItem>
+            </MudGrid>
+        }
+
+        @* Field Mappings *@
+        @if (_integration.FieldMappings?.Any() == true)
+        {
+            <MudPaper Elevation="2" Class="pa-6 mb-4">
+                <MudText Typo="Typo.h5" Class="mb-4">
+                    Field Mappings
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-2">@_integration.FieldMappings.Count</MudChip>
+                </MudText>
+                <MappingDetailsTable FieldMappings="@_integration.FieldMappings" />
+            </MudPaper>
+        }
+
+        @* Static Values *@
+        @if (_integration.StaticValues?.Any() == true)
+        {
+            <MudPaper Elevation="2" Class="pa-6 mb-4">
+                <MudText Typo="Typo.h5" Class="mb-4">
+                    Static Values
+                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Class="ml-2">@_integration.StaticValues.Count</MudChip>
+                </MudText>
+                <MudSimpleTable Hover="true" Dense="true">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var kvp in _integration.StaticValues)
+                        {
+                            <tr>
+                                <td><MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">$$@kvp.Key</MudChip></td>
+                                <td>@kvp.Value</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        }
+
+        @* SOAP Configuration *@
+        @if (_integration.SoapConfig != null)
+        {
+            <MudPaper Elevation="2" Class="pa-6 mb-4">
+                <MudText Typo="Typo.h5" Class="mb-4">SOAP Configuration</MudText>
+                @if (!string.IsNullOrEmpty(_integration.SoapConfig.BodyWrapperFieldXpath))
+                {
+                    <MudText Typo="Typo.body1"><strong>Body Wrapper XPath:</strong> @_integration.SoapConfig.BodyWrapperFieldXpath</MudText>
+                }
+
+                @if (_integration.SoapConfig.Fields?.Any() == true)
+                {
+                    <MudText Typo="Typo.h6" Class="mt-4 mb-2">SOAP Fields</MudText>
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Class="mb-2">@_integration.SoapConfig.Fields.Count field(s)</MudChip>
+                }
+            </MudPaper>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private IntegrationDto? _integration;
+    private bool _loading = true;
+    private bool _updatingToggles = false;
+    private List<BreadcrumbItem> _breadcrumbs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadIntegration();
+    }
+
+    private async Task LoadIntegration()
+    {
+        _loading = true;
+
+        try
+        {
+            _integration = await ApiClient.GetIntegrationByIdAsync(Id);
+
+            if (_integration != null)
+            {
+                _breadcrumbs = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Integrations", href: "/integrations"),
+                    new BreadcrumbItem(_integration.Name, href: null, disabled: true)
+                };
+            }
+            else
+            {
+                Snackbar.Add("Integration not found", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading integration: {ex.Message}", Severity.Error);
+            _integration = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenTestDialog()
+    {
+        if (_integration == null)
+        {
+            Snackbar.Add("Integration not loaded", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters<TestIntegrationDialog>
+        {
+            { x => x.IntegrationId, _integration.Id },
+            { x => x.IntegrationName, _integration.Name }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        };
+
+        await DialogService.ShowAsync<TestIntegrationDialog>("Test Integration", parameters, options);
+    }
+
+    private async Task UpdateToggle(string toggleName, bool newValue)
+    {
+        if (_integration == null || _updatingToggles)
+            return;
+
+        _updatingToggles = true;
+
+        try
+        {
+            // Create update request with current values
+            var updateRequest = new UpdateIntegrationRequest
+            {
+                Name = _integration.Name,
+                Endpoint = _integration.Endpoint,
+                SourceType = _integration.SourceType,
+                DestinationType = _integration.DestinationType,
+                DestinationUrl = _integration.DestinationUrl,
+                IsActive = _integration.IsActive,
+                EnableInput = _integration.EnableInput,
+                EnableOutput = _integration.EnableOutput,
+                EnableMessageCapture = _integration.EnableMessageCapture,
+                FieldMappings = _integration.FieldMappings,
+                StaticValues = _integration.StaticValues,
+                SoapConfig = _integration.SoapConfig
+            };
+
+            // Update the toggle value
+            switch (toggleName)
+            {
+                case "EnableInput":
+                    updateRequest.EnableInput = newValue;
+                    break;
+                case "EnableOutput":
+                    updateRequest.EnableOutput = newValue;
+                    break;
+                case "EnableMessageCapture":
+                    updateRequest.EnableMessageCapture = newValue;
+                    break;
+            }
+
+            // Send update to API
+            var updated = await ApiClient.UpdateIntegrationAsync(Id, updateRequest);
+
+            if (updated != null)
+            {
+                _integration = updated;
+                Snackbar.Add($"{toggleName} updated successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Failed to update {toggleName}", Severity.Error);
+                // Reload to revert UI
+                await LoadIntegration();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating {toggleName}: {ex.Message}", Severity.Error);
+            // Reload to revert UI
+            await LoadIntegration();
+        }
+        finally
+        {
+            _updatingToggles = false;
+        }
+    }
+}

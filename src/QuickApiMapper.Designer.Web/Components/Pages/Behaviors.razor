@@ -1,0 +1,123 @@
+@page "/behaviors"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Management.Api.Models
+@inject IntegrationApiClient ApiClient
+
+<PageTitle>Behaviors</PageTitle>
+
+<div class="fade-in">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">Available Behaviors</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Cross-cutting concerns that can be applied to integrations for logging, validation, error handling, and more.
+            </MudText>
+        </div>
+        <MudStack Row="true" Spacing="2">
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                          Color="Color.Primary"
+                          OnClick="@LoadBehaviors"
+                          Disabled="@_loading"
+                          Size="Size.Large" />
+        </MudStack>
+    </MudStack>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+}
+
+@if (_loading)
+{
+    <MudGrid>
+        @for (int i = 0; i < 4; i++)
+        {
+            <MudItem xs="12" md="6">
+                <SkeletonCard ShowParameters="false" />
+            </MudItem>
+        }
+    </MudGrid>
+}
+    else if (_behaviors == null || !_behaviors.Any())
+    {
+        <MudPaper Elevation="2" Class="pa-8" Style="text-align: center;">
+            <MudIcon Icon="@Icons.Material.Filled.Psychology" Size="Size.Large" Color="Color.Secondary" Class="mb-4" Style="font-size: 4rem;" />
+            <MudText Typo="Typo.h6" Class="mb-2">No Behaviors Found</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                No behaviors are currently registered in the system.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid Spacing="4">
+            @foreach (var behavior in _behaviors)
+            {
+                <MudItem xs="12" md="6">
+                    <MudCard Elevation="2" Class="slide-in-right">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Class="font-semibold">@behavior.Name</MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@behavior.Category</MudChip>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mb-3">@behavior.Description</MudText>
+
+                            <MudDivider Class="my-3" />
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@Icons.Material.Filled.SwapVert" Size="Size.Small" Color="Color.Primary" />
+                                <MudText Typo="Typo.subtitle2" Class="font-medium">Execution Order:</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Info">@behavior.ExecutionOrder</MudChip>
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</div>
+
+@code {
+    private List<BehaviorMetadata>? _behaviors;
+    private bool _loading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await LoadBehaviors();
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task LoadBehaviors()
+    {
+        _loading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            _behaviors = await ApiClient.GetBehaviorsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load behaviors: {ex.Message}";
+            Console.WriteLine($"Error loading behaviors: {ex}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

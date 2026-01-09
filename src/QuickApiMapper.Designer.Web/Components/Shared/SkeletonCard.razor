@@ -1,0 +1,30 @@
+@* Skeleton loader card for better loading UX *@
+
+<MudPaper Elevation="2" Class="pa-4" Style="min-height: 200px;">
+    <MudStack Spacing="3">
+        @* Header skeleton *@
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <div class="skeleton skeleton-text" style="width: 40%; height: 24px;"></div>
+            <div class="skeleton" style="width: 80px; height: 28px; border-radius: 14px;"></div>
+        </MudStack>
+
+        @* Content skeleton *@
+        <MudStack Spacing="2">
+            <div class="skeleton skeleton-text" style="width: 100%;"></div>
+            <div class="skeleton skeleton-text" style="width: 85%;"></div>
+            <div class="skeleton skeleton-text" style="width: 60%;"></div>
+        </MudStack>
+
+        @if (ShowParameters)
+        {
+            <MudDivider />
+            <div class="skeleton skeleton-text" style="width: 30%;"></div>
+            <div class="skeleton skeleton-text" style="width: 70%;"></div>
+        }
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public bool ShowParameters { get; set; } = false;
+}

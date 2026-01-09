@@ -1,0 +1,44 @@
+{
+  "interface": "VENDOR_SYNC",
+  "direction": "OUTBOUND",
+  "sender": "ERP_SYSTEM",
+  "sender_message_id": null,
+  "receiver": "PROCUREMENT_SYSTEM",
+  "supplierinfo": [
+    {
+      "supplier_id": "VEND001",
+      "supplier_name": "Global Supplies Ltd",
+      "address": [
+        {
+          "address_type": "Invoice",
+          "address_id": "001",
+          "address_1": "456 Commerce Drive",
+          "address_2": "Building A",
+          "city": "Portland",
+          "state": "OR",
+          "county": null,
+          "zip_code": "97201",
+          "country_code": "US"
+        }
+      ],
+      "communication": [
+        {
+          "comm_type": "Email",
+          "comm_value": "accounts@example.com"
+        },
+        {
+          "comm_type": "Phone",
+          "comm_value": "555-987-6543"
+        }
+      ],
+      "invoice": [
+        {
+          "company": "Example Systems Inc",
+          "currency": "USD",
+          "supplier_group": "Preferred",
+          "payment_terms": "NET30"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+@page "/transformers"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Management.Api.Models
+@inject IntegrationApiClient ApiClient
+
+<PageTitle>Transformers</PageTitle>
+
+<div class="fade-in">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">Available Transformers</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Reusable functions that can be applied to field mappings to modify data during integration processing.
+            </MudText>
+        </div>
+        <MudStack Row="true" Spacing="2">
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                          Color="Color.Primary"
+                          OnClick="@LoadTransformers"
+                          Disabled="@_loading"
+                          Size="Size.Large" />
+        </MudStack>
+    </MudStack>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+}
+
+@if (_loading)
+{
+    <MudGrid>
+        @for (int i = 0; i < 6; i++)
+        {
+            <MudItem xs="12" md="6" lg="4">
+                <SkeletonCard ShowParameters="true" />
+            </MudItem>
+        }
+    </MudGrid>
+}
+    else if (_transformers == null || !_transformers.Any())
+    {
+        <MudPaper Elevation="2" Class="pa-8" Style="text-align: center;">
+            <MudIcon Icon="@Icons.Material.Filled.Code" Size="Size.Large" Color="Color.Secondary" Class="mb-4" Style="font-size: 4rem;" />
+            <MudText Typo="Typo.h6" Class="mb-2">No Transformers Found</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                No transformers are currently registered in the system.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid Spacing="4">
+            @foreach (var transformer in _transformers)
+            {
+                <MudItem xs="12" md="6" lg="4">
+                    <MudCard Elevation="2" Class="slide-in-right">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Class="font-semibold">@transformer.Name</MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary">@transformer.Category</MudChip>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="mb-2">@transformer.Description</MudText>
+
+                            @if (transformer.Parameters != null && transformer.Parameters.Any())
+                            {
+                                <MudDivider Class="my-3" />
+                                <MudText Typo="Typo.subtitle2" Class="mb-2 font-medium">Parameters:</MudText>
+                                <MudStack Spacing="1">
+                                    @foreach (var param in transformer.Parameters)
+                                    {
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-size: 0.875rem;">
+                                            <MudIcon Icon="@Icons.Material.Filled.ArrowRight" Size="Size.Small" Style="vertical-align: middle;" />
+                                            <strong>@param.Name</strong> <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="height: 20px; font-size: 0.7rem;">@param.Type</MudChip>
+                                            <br />
+                                            <span Style="margin-left: 24px;">@param.Description</span>
+                                        </MudText>
+                                    }
+                                </MudStack>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</div>
+
+@code {
+    private List<TransformerMetadata>? _transformers;
+    private bool _loading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await LoadTransformers();
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task LoadTransformers()
+    {
+        _loading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            _transformers = await ApiClient.GetTransformersAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load transformers: {ex.Message}";
+            Console.WriteLine($"Error loading transformers: {ex}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

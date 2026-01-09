@@ -1,0 +1,46 @@
+<root>
+  <session alias="" email="">
+    <state entity_name="customer">
+      <action name="sync">
+        <main>
+          <row>
+            <customer_id>CUST001</customer_id>
+            <credit_limit>50000.00</credit_limit>
+            <region_id>US-CENTRAL</region_id>
+            <priority>1</priority>
+            <sales_region_id>US-CENTRAL</sales_region_id>
+            <name>Acme Corporation</name>
+            <currency_code>USD</currency_code>
+            <price_book_id>STANDARD</price_book_id>
+            <is_active>Y</is_active>
+            <is_credit_hold>N</is_credit_hold>
+            <is_verified>Y</is_verified>
+            <is_branch>N</is_branch>
+            <payment_terms_id>NET30</payment_terms_id>
+            <status_code>A</status_code>
+            <billing_email>billing@example.com</billing_email>
+            <created_by>System User</created_by>
+          </row>
+        </main>
+        <addresses>
+          <row>
+            <street_address>123 Main Street</street_address>
+            <address_category>PRIMARY</address_category>
+            <validation_status>V</validation_status>
+            <city>Springfield</city>
+            <country_code>US</country_code>
+            <phone_number>555-123-4567</phone_number>
+            <state_code>IL</state_code>
+            <postal_code>62701</postal_code>
+            <metadata>
+              <item>
+                <key>address_category</key>
+                <value>PRIMARY</value>
+              </item>
+            </metadata>
+          </row>
+        </addresses>
+      </action>
+    </state>
+  </session>
+</root>

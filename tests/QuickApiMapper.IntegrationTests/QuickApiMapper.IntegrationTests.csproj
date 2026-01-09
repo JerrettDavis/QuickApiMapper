@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit.Analyzers" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\QuickApiMapper.Contracts\QuickApiMapper.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\QuickApiMapper.Persistence.Abstractions\QuickApiMapper.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\QuickApiMapper.Persistence.PostgreSQL\QuickApiMapper.Persistence.PostgreSQL.csproj" />
+    <ProjectReference Include="..\..\src\QuickApiMapper.Persistence.SQLite\QuickApiMapper.Persistence.SQLite.csproj" />
+    <ProjectReference Include="..\..\src\QuickApiMapper.Application\QuickApiMapper.Application.csproj" />
+    <ProjectReference Include="..\..\src\QuickApiMapper.Extensions.gRPC\QuickApiMapper.Extensions.gRPC.csproj" />
+    <ProjectReference Include="..\..\src\QuickApiMapper.Extensions.ServiceBus\QuickApiMapper.Extensions.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\src\QuickApiMapper.Extensions.RabbitMQ\QuickApiMapper.Extensions.RabbitMQ.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+</Project>

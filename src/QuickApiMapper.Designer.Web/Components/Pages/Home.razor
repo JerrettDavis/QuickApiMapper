@@ -1,0 +1,482 @@
+@page "/"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Management.Api.Models
+@inject IntegrationApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard - QuickApiMapper Designer</PageTitle>
+
+<div class="fade-in">
+    @* Header Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">Dashboard</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Welcome back! Here's an overview of your API integrations.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                  Color="Color.Primary"
+                  StartIcon="@Icons.Material.Filled.Add"
+                  Size="Size.Large"
+                  Href="/create"
+                  Class="px-6">
+            Create Integration
+        </MudButton>
+    </MudStack>
+
+    @* Statistics Cards *@
+    <MudGrid Spacing="4" Class="mb-6">
+        @* Total Integrations *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-6 stat-card">
+                <MudStack Spacing="3">
+                    <div class="dashboard-stat-icon gradient-primary" style="color: white;">
+                        <MudIcon Icon="@Icons.Material.Filled.Hub" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.body2" Class="dashboard-stat-label">Total Integrations</MudText>
+                        <MudText Class="dashboard-stat-value">@_totalIntegrations</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Configured endpoints
+                        </MudText>
+                    </div>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        @* Active Integrations *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-6 stat-card stat-card-success">
+                <MudStack Spacing="3">
+                    <div class="dashboard-stat-icon gradient-success" style="color: white;">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.body2" Class="dashboard-stat-label">Active</MudText>
+                        <MudText Class="dashboard-stat-value" Color="Color.Success">@_activeIntegrations</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @(Math.Round(_totalIntegrations > 0 ? (double)_activeIntegrations / _totalIntegrations * 100 : 0, 1))% uptime
+                        </MudText>
+                    </div>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        @* Success Rate *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-6 stat-card stat-card-info">
+                <MudStack Spacing="3">
+                    <div class="dashboard-stat-icon gradient-info" style="color: white;">
+                        <MudIcon Icon="@Icons.Material.Filled.Speed" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.body2" Class="dashboard-stat-label">Success Rate</MudText>
+                        @if (_successRate.HasValue)
+                        {
+                            <MudText Class="dashboard-stat-value" Color="@GetSuccessRateColor(_successRate.Value)">@_successRate.Value.ToString("F1")%</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                Last 7 days
+                            </MudText>
+                        }
+                        else
+                        {
+                            <MudText Class="dashboard-stat-value" Color="Color.Info">--</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                No messages yet
+                            </MudText>
+                        }
+                    </div>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        @* Requests Last 7 Days *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-6 stat-card stat-card-warning">
+                <MudStack Spacing="3">
+                    <div class="dashboard-stat-icon gradient-warning" style="color: white;">
+                        <MudIcon Icon="@Icons.Material.Filled.Timeline" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.body2" Class="dashboard-stat-label">Requests</MudText>
+                        <MudText Class="dashboard-stat-value" Color="Color.Warning">@(_totalRequests?.ToString("N0") ?? "--")</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Last 7 days
+                        </MudText>
+                    </div>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="4">
+
+        @* Quick Actions *@
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="2" Class="pa-6">
+                <MudText Typo="Typo.h5" Class="font-semibold mb-4">Quick Actions</MudText>
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudPaper Elevation="0" Class="pa-4 border-2" Style="border-color: var(--mud-palette-primary); cursor: pointer;" @onclick='() => Navigation.NavigateTo("/integrations")'>
+                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Filled.IntegrationInstructions" Color="Color.Primary" Size="Size.Large" />
+                                <MudText Typo="Typo.body1" Class="font-semibold">View All</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                                    Manage existing integrations
+                                </MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudPaper Elevation="0" Class="pa-4 border-2" Style="border-color: var(--mud-palette-success); cursor: pointer;" @onclick='() => Navigation.NavigateTo("/transformers")'>
+                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Filled.Transform" Color="Color.Success" Size="Size.Large" />
+                                <MudText Typo="Typo.body1" Class="font-semibold">Transformers</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                                    Browse data transformers
+                                </MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudPaper Elevation="0" Class="pa-4 border-2" Style="border-color: var(--mud-palette-info); cursor: pointer;" @onclick='() => Navigation.NavigateTo("/monitoring")'>
+                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Filled.Speed" Color="Color.Info" Size="Size.Large" />
+                                <MudText Typo="Typo.body1" Class="font-semibold">Monitoring</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                                    View system health
+                                </MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        @* Integration Status Overview *@
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="2" Class="pa-6">
+                <MudText Typo="Typo.h5" Class="font-semibold mb-4">By Destination Type</MudText>
+                @if (_loading)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                }
+                else
+                {
+                    <MudStack Spacing="3">
+                        @foreach (var typeGroup in _integrationsByType.OrderByDescending(g => g.Value))
+                        {
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@GetTypeIcon(typeGroup.Key)" Color="@GetTypeColor(typeGroup.Key)" />
+                                    <MudText Typo="Typo.body1">@typeGroup.Key</MudText>
+                                </MudStack>
+                                <MudChip T="string" Size="Size.Small" Color="@GetTypeColor(typeGroup.Key)">@typeGroup.Value</MudChip>
+                            </MudStack>
+                        }
+                        @if (_integrationsByType.Count == 0)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                                No integrations configured yet
+                            </MudText>
+                        }
+                    </MudStack>
+                }
+            </MudPaper>
+        </MudItem>
+
+        @* Recent Integrations *@
+        @if (_loading)
+        {
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-6">
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="mt-4">Loading dashboard data...</MudText>
+                </MudPaper>
+            </MudItem>
+        }
+        else if (_recentIntegrations != null && _recentIntegrations.Any())
+        {
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-6">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                        <MudText Typo="Typo.h5" Class="font-semibold">Recently Updated</MudText>
+                        <MudButton Variant="Variant.Text"
+                                  Color="Color.Primary"
+                                  EndIcon="@Icons.Material.Filled.ArrowForward"
+                                  Href="/integrations">
+                            View All
+                        </MudButton>
+                    </MudStack>
+                    <MudTable Items="@_recentIntegrations"
+                             Hover="true"
+                             Breakpoint="Breakpoint.Sm"
+                             Elevation="0"
+                             Dense="true"
+                             Class="rounded-lg">
+                        <HeaderContent>
+                            <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Name</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Endpoint</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Integration Flow</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Status</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Last Updated</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.body2" Class="font-semibold">Actions</MudText></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.body1" Class="font-semibold">@context.Name</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">v@(context.Version)</MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Endpoint">
+                                <MudChip T="string"
+                                        Size="Size.Small"
+                                        Variant="Variant.Outlined"
+                                        Icon="@Icons.Material.Filled.Api">
+                                    @context.Endpoint
+                                </MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Integration Flow">
+                                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Icon="@Icons.Material.Filled.Input">
+                                        @context.SourceType
+                                    </MudChip>
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.Output">
+                                        @context.DestinationType
+                                    </MudChip>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Status">
+                                @if (context.IsActive)
+                                {
+                                    <MudChip T="string"
+                                            Size="Size.Small"
+                                            Color="Color.Success"
+                                            Icon="@Icons.Material.Filled.CheckCircle">
+                                        Active
+                                    </MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip T="string"
+                                            Size="Size.Small"
+                                            Color="Color.Default"
+                                            Icon="@Icons.Material.Filled.PauseCircle">
+                                        Inactive
+                                    </MudChip>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Last Updated">
+                                <MudText Typo="Typo.body2">@context.UpdatedAt.ToLocalTime().ToString("g")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @GetRelativeTime(context.UpdatedAt)
+                                </MudText>
+                            </MudTd>
+                            <MudTd DataLabel="Actions">
+                                <MudStack Row="true" Spacing="1">
+                                    <MudTooltip Text="Edit">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                      Color="Color.Primary"
+                                                      Size="Size.Small"
+                                                      OnClick="@(() => EditIntegration(context.Id))" />
+                                    </MudTooltip>
+                                    <MudTooltip Text="View Details">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                      Color="Color.Info"
+                                                      Size="Size.Small"
+                                                      OnClick="@(() => ViewIntegration(context.Id))" />
+                                    </MudTooltip>
+                                </MudStack>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            </MudItem>
+        }
+        else
+        {
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-6">
+                    <MudStack Spacing="4" AlignItems="AlignItems.Center" Class="py-8">
+                        <MudIcon Icon="@Icons.Material.Filled.IntegrationInstructions"
+                                Size="Size.Large"
+                                Color="Color.Secondary"
+                                Style="font-size: 4rem;" />
+                        <MudText Typo="Typo.h5" Align="Align.Center">No Integrations Yet</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                            Get started by creating your first API integration
+                        </MudText>
+                        <MudButton Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  StartIcon="@Icons.Material.Filled.Add"
+                                  Size="Size.Large"
+                                  Href="/create">
+                            Create Your First Integration
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+</div>
+
+@code {
+    private bool _loading = true;
+    private int _totalIntegrations;
+    private int _activeIntegrations;
+    private int _inactiveIntegrations;
+    private double? _successRate;
+    private int? _totalRequests;
+    private List<IntegrationDto>? _recentIntegrations;
+    private Dictionary<string, int> _integrationsByType = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await LoadDashboardData();
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task LoadDashboardData()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var allIntegrations = await ApiClient.GetAllIntegrationsAsync();
+
+            _totalIntegrations = allIntegrations?.Count ?? 0;
+            _activeIntegrations = allIntegrations?.Count(i => i.IsActive) ?? 0;
+            _inactiveIntegrations = allIntegrations?.Count(i => !i.IsActive) ?? 0;
+
+            // Group integrations by destination type
+            _integrationsByType = allIntegrations?
+                .GroupBy(i => i.DestinationType.ToUpperInvariant())
+                .ToDictionary(g => g.Key, g => g.Count()) ?? new Dictionary<string, int>();
+
+            // Get 5 most recently updated integrations
+            _recentIntegrations = allIntegrations?
+                .OrderByDescending(i => i.UpdatedAt)
+                .Take(5)
+                .ToList();
+
+            // Load message statistics for last 7 days
+            if (allIntegrations != null && allIntegrations.Any())
+            {
+                var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+                int totalMessages = 0;
+                int totalSuccessful = 0;
+
+                foreach (var integration in allIntegrations)
+                {
+                    try
+                    {
+                        var stats = await ApiClient.GetMessageStatisticsAsync(
+                            integration.Id,
+                            sevenDaysAgo,
+                            DateTime.UtcNow);
+
+                        if (stats != null)
+                        {
+                            totalMessages += stats.TotalMessages;
+                            totalSuccessful += stats.SuccessfulMessages;
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors for individual integrations
+                    }
+                }
+
+                _totalRequests = totalMessages;
+                if (totalMessages > 0)
+                {
+                    _successRate = (double)totalSuccessful / totalMessages * 100;
+                }
+                else
+                {
+                    _successRate = null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string GetTypeIcon(string type)
+    {
+        return type.ToUpperInvariant() switch
+        {
+            "JSON" => Icons.Material.Filled.Code,
+            "SOAP" => Icons.Material.Filled.Soap,
+            "XML" => Icons.Material.Filled.DataObject,
+            "GRPC" => Icons.Material.Filled.SettingsEthernet,
+            _ => Icons.Material.Filled.Api
+        };
+    }
+
+    private Color GetTypeColor(string type)
+    {
+        return type.ToUpperInvariant() switch
+        {
+            "JSON" => Color.Primary,
+            "SOAP" => Color.Success,
+            "XML" => Color.Info,
+            "GRPC" => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetSuccessRateColor(double successRate)
+    {
+        if (successRate >= 95) return Color.Success;
+        if (successRate >= 80) return Color.Warning;
+        return Color.Error;
+    }
+
+    private void EditIntegration(Guid id)
+    {
+        Navigation.NavigateTo($"/edit/{id}");
+    }
+
+    private void ViewIntegration(Guid id)
+    {
+        Navigation.NavigateTo($"/integrations/{id}");
+    }
+
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+
+        if (timeSpan.TotalDays >= 365)
+            return $"{(int)(timeSpan.TotalDays / 365)} year{((int)(timeSpan.TotalDays / 365) > 1 ? "s" : "")} ago";
+        if (timeSpan.TotalDays >= 30)
+            return $"{(int)(timeSpan.TotalDays / 30)} month{((int)(timeSpan.TotalDays / 30) > 1 ? "s" : "")} ago";
+        if (timeSpan.TotalDays >= 1)
+            return $"{(int)timeSpan.TotalDays} day{((int)timeSpan.TotalDays > 1 ? "s" : "")} ago";
+        if (timeSpan.TotalHours >= 1)
+            return $"{(int)timeSpan.TotalHours} hour{((int)timeSpan.TotalHours > 1 ? "s" : "")} ago";
+        if (timeSpan.TotalMinutes >= 1)
+            return $"{(int)timeSpan.TotalMinutes} minute{((int)timeSpan.TotalMinutes > 1 ? "s" : "")} ago";
+
+        return "just now";
+    }
+}

@@ -1,0 +1,116 @@
+@using QuickApiMapper.Management.Api.Models
+@using QuickApiMapper.Designer.Web.Utilities
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudStack Spacing="2">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h6" Class="font-semibold">@Title</MudText>
+            <MudTooltip Text="Copy to clipboard">
+                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                              Size="Size.Small"
+                              OnClick="CopyToClipboard" />
+            </MudTooltip>
+        </MudStack>
+
+        @if (!string.IsNullOrEmpty(_exampleContent))
+        {
+            <div class="code-preview">
+                <pre><code>@_exampleContent</code></pre>
+            </div>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Info">No field mappings to display</MudAlert>
+        }
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired]
+    public string SourceType { get; set; } = string.Empty;
+
+    [Parameter]
+    public List<FieldMappingDto>? FieldMappings { get; set; }
+
+    [Parameter]
+    public Dictionary<string, string>? StaticValues { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsSource { get; set; }
+
+    private string _exampleContent = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        GenerateExample();
+    }
+
+    private void GenerateExample()
+    {
+        if (FieldMappings == null || !FieldMappings.Any())
+        {
+            _exampleContent = string.Empty;
+            return;
+        }
+
+        // Determine if this is JSON or XML based on source type
+        var isJson = SourceType?.ToUpperInvariant() == "JSON";
+        var isXml = SourceType?.ToUpperInvariant() == "XML";
+        var isSoap = SourceType?.ToUpperInvariant() == "SOAP";
+
+        if (isJson)
+        {
+            _exampleContent = SchemaExampleGenerator.GenerateJsonExample(FieldMappings, StaticValues, IsSource);
+        }
+        else if (isXml || isSoap)
+        {
+            _exampleContent = SchemaExampleGenerator.GenerateXmlExample(FieldMappings, StaticValues, IsSource);
+        }
+        else
+        {
+            // For other types (gRPC, ServiceBus, RabbitMQ), try to infer from paths
+            var hasJsonPaths = FieldMappings.Any(m =>
+            {
+                var path = IsSource ? m.Source : m.Destination;
+                return path?.StartsWith("$.") == true;
+            });
+
+            var hasXmlPaths = FieldMappings.Any(m =>
+            {
+                var path = IsSource ? m.Source : m.Destination;
+                return path?.StartsWith("/") == true && !path.StartsWith("$");
+            });
+
+            if (hasJsonPaths)
+            {
+                _exampleContent = SchemaExampleGenerator.GenerateJsonExample(FieldMappings, StaticValues, IsSource);
+            }
+            else if (hasXmlPaths)
+            {
+                _exampleContent = SchemaExampleGenerator.GenerateXmlExample(FieldMappings, StaticValues, IsSource);
+            }
+            else
+            {
+                _exampleContent = "// Unable to generate example - unknown path format";
+            }
+        }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _exampleContent);
+            Snackbar.Add("Copied to clipboard!", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Failed to copy to clipboard", Severity.Error);
+        }
+    }
+}
