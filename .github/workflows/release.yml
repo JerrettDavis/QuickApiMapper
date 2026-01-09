@@ -248,9 +248,9 @@ jobs:
             --self-contained true \
             --no-dependencies \
             --output ./publish/management-api-${{ matrix.rid }} \
-            /p:PublishSingleFile=true \
-            /p:PublishTrimmed=true \
-            /p:Version=${{ needs.validate-release.outputs.version }}
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:Version=${{ needs.validate-release.outputs.version }}
 
       - name: Publish Web API
         shell: bash
@@ -261,9 +261,9 @@ jobs:
             --self-contained true \
             --no-dependencies \
             --output ./publish/web-api-${{ matrix.rid }} \
-            /p:PublishSingleFile=true \
-            /p:PublishTrimmed=true \
-            /p:Version=${{ needs.validate-release.outputs.version }}
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:Version=${{ needs.validate-release.outputs.version }}
 
       - name: Publish Designer Web
         shell: bash
@@ -274,9 +274,9 @@ jobs:
             --self-contained true \
             --no-dependencies \
             --output ./publish/designer-web-${{ matrix.rid }} \
-            /p:PublishSingleFile=true \
-            /p:PublishTrimmed=true \
-            /p:Version=${{ needs.validate-release.outputs.version }}
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:Version=${{ needs.validate-release.outputs.version }}
 
       - name: Create archives (Unix)
         if: runner.os != 'Windows'

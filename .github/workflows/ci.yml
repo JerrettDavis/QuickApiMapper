@@ -207,8 +207,8 @@ jobs:
             --self-contained false \
             --no-dependencies \
             --output ./publish/management-api-${{ matrix.rid }} \
-            /p:PublishSingleFile=false \
-            /p:Version=${{ needs.build-and-test.outputs.version }}
+            -p:PublishSingleFile=false \
+            -p:Version=${{ needs.build-and-test.outputs.version }}
 
       - name: Publish Web API
         shell: bash
@@ -219,8 +219,8 @@ jobs:
             --self-contained false \
             --no-dependencies \
             --output ./publish/web-api-${{ matrix.rid }} \
-            /p:PublishSingleFile=false \
-            /p:Version=${{ needs.build-and-test.outputs.version }}
+            -p:PublishSingleFile=false \
+            -p:Version=${{ needs.build-and-test.outputs.version }}
 
       - name: Publish Designer Web
         shell: bash
@@ -231,8 +231,8 @@ jobs:
             --self-contained false \
             --no-dependencies \
             --output ./publish/designer-web-${{ matrix.rid }} \
-            /p:PublishSingleFile=false \
-            /p:Version=${{ needs.build-and-test.outputs.version }}
+            -p:PublishSingleFile=false \
+            -p:Version=${{ needs.build-and-test.outputs.version }}
 
       - name: Create archives (Linux)
         if: matrix.os == 'ubuntu-latest'

@@ -198,8 +198,8 @@ jobs:
               --no-build \
               --no-dependencies \
               --output ./dry-run-publish/management-api \
-              /p:PublishSingleFile=false \
-              /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Management API"
+              -p:PublishSingleFile=false \
+              -p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Management API"
           fi
 
           # Publish Runtime Web API
@@ -210,8 +210,8 @@ jobs:
               --no-build \
               --no-dependencies \
               --output ./dry-run-publish/web-api \
-              /p:PublishSingleFile=false \
-              /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Web API"
+              -p:PublishSingleFile=false \
+              -p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Web API"
           fi
 
           # Publish Designer Web
@@ -222,8 +222,8 @@ jobs:
               --no-build \
               --no-dependencies \
               --output ./dry-run-publish/designer-web \
-              /p:PublishSingleFile=false \
-              /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Designer Web"
+              -p:PublishSingleFile=false \
+              -p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Designer Web"
           fi
 
           echo ""
