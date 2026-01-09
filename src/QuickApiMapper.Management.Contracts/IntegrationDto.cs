@@ -1,4 +1,4 @@
-namespace QuickApiMapper.Management.Api.Models;
+namespace QuickApiMapper.Management.Contracts.Models;
 
 /// <summary>
 /// Data transfer object for integration mapping.

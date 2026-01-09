@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using QuickApiMapper.Application.Extensions;
-using QuickApiMapper.Management.Api.Models;
+using QuickApiMapper.Management.Contracts.Models;
 using QuickApiMapper.Management.Api.Services;
 using QuickApiMapper.MessageCapture.InMemory.Extensions;
 using QuickApiMapper.Persistence.Abstractions.Repositories;

@@ -11,10 +11,11 @@
 
   <ItemGroup>
     <PackageReference Include="MudBlazor" />
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\QuickApiMapper.Management.Api\QuickApiMapper.Management.Api.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.Management.Contracts\QuickApiMapper.Management.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

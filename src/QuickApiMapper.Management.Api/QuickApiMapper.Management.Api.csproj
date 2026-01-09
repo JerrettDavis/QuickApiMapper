@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\QuickApiMapper.Management.Contracts\QuickApiMapper.Management.Contracts.csproj" />
     <ProjectReference Include="..\QuickApiMapper.Contracts\QuickApiMapper.Contracts.csproj" />
     <ProjectReference Include="..\QuickApiMapper.MessageCapture.Abstractions\QuickApiMapper.MessageCapture.Abstractions.csproj" />
     <ProjectReference Include="..\QuickApiMapper.MessageCapture.InMemory\QuickApiMapper.MessageCapture.InMemory.csproj" />

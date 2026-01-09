@@ -1,5 +1,5 @@
 using System.Text.Json;
-using QuickApiMapper.Management.Api.Models;
+using QuickApiMapper.Management.Contracts.Models;
 using QuickApiMapper.Persistence.Abstractions.Models;
 using QuickApiMapper.Persistence.Abstractions.Repositories;
 

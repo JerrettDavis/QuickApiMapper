@@ -1,5 +1,5 @@
 using System.Net.Http.Json;
-using QuickApiMapper.Management.Api.Models;
+using QuickApiMapper.Management.Contracts.Models;
 
 namespace QuickApiMapper.Designer.Web.Services;
 
