@@ -394,7 +394,7 @@ jobs:
           echo "changelog-file=CHANGELOG.md" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.validate-release.outputs.version }}
           name: QuickApiMapper v${{ needs.validate-release.outputs.version }}
