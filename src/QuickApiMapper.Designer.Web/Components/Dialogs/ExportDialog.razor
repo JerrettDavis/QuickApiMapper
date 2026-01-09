@@ -1,6 +1,7 @@
 @using MudBlazor
 @using System.Text.Json
 @using System.Text
+@using QuickApiMapper.Management.Contracts.Models
 @inject IJSRuntime JSRuntime
 
 <MudDialog>
@@ -59,7 +60,7 @@
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
-    [Parameter] public List<Management.Api.Models.IntegrationDto> Integrations { get; set; } = new();
+    [Parameter] public List<IntegrationDto> Integrations { get; set; } = new();
 
     private string _exportFormat = "json";
     private bool _includeInactive = false;
