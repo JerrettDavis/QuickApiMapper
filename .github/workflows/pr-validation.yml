@@ -196,6 +196,7 @@ jobs:
             dotnet publish src/QuickApiMapper.Management.Api \
               --configuration Release \
               --no-build \
+              --no-dependencies \
               --output ./dry-run-publish/management-api \
               /p:PublishSingleFile=false \
               /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Management API"
@@ -207,6 +208,7 @@ jobs:
             dotnet publish src/QuickApiMapper.Web \
               --configuration Release \
               --no-build \
+              --no-dependencies \
               --output ./dry-run-publish/web-api \
               /p:PublishSingleFile=false \
               /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Web API"
@@ -218,6 +220,7 @@ jobs:
             dotnet publish src/QuickApiMapper.Designer.Web \
               --configuration Release \
               --no-build \
+              --no-dependencies \
               --output ./dry-run-publish/designer-web \
               /p:PublishSingleFile=false \
               /p:PublishTrimmed=false || echo "  ⚠️  Failed to publish Designer Web"

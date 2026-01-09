@@ -245,6 +245,7 @@ jobs:
             --configuration Release \
             --runtime ${{ matrix.rid }} \
             --self-contained true \
+            --no-dependencies \
             --output ./publish/management-api-${{ matrix.rid }} \
             /p:PublishSingleFile=true \
             /p:PublishTrimmed=true \
@@ -256,6 +257,7 @@ jobs:
             --configuration Release \
             --runtime ${{ matrix.rid }} \
             --self-contained true \
+            --no-dependencies \
             --output ./publish/web-api-${{ matrix.rid }} \
             /p:PublishSingleFile=true \
             /p:PublishTrimmed=true \
@@ -267,6 +269,7 @@ jobs:
             --configuration Release \
             --runtime ${{ matrix.rid }} \
             --self-contained true \
+            --no-dependencies \
             --output ./publish/designer-web-${{ matrix.rid }} \
             /p:PublishSingleFile=true \
             /p:PublishTrimmed=true \
