@@ -29,8 +29,7 @@ public class RabbitMqIntegrationTests
     public async Task OneTimeSetup()
     {
         // Start RabbitMQ container with explicit credentials
-        _rabbitMqContainer = new RabbitMqBuilder()
-            .WithImage("rabbitmq:3-management")
+        _rabbitMqContainer = new RabbitMqBuilder("rabbitmq:3-management")
             .WithUsername("guest")
             .WithPassword("guest")
             .Build();

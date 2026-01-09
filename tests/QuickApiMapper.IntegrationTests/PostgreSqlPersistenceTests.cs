@@ -20,8 +20,7 @@ public class PostgreSqlPersistenceTests
     public async Task OneTimeSetup()
     {
         // Start PostgreSQL container
-        _postgresContainer = new PostgreSqlBuilder()
-            .WithImage("postgres:17-alpine")
+        _postgresContainer = new PostgreSqlBuilder("postgres:17-alpine")
             .WithDatabase("quickapimapper_test")
             .WithUsername("postgres")
             .WithPassword("test_password")
