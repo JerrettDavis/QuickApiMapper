@@ -113,7 +113,8 @@ public class InMemoryMessageCaptureProvider : IMessageCaptureProvider
         if (endDate.HasValue)
             query = query.Where(m => m.Timestamp <= endDate.Value);
 
-        var messages = query.ToList();
+        // Only count output messages (completed transformations), not input messages
+        var messages = query.Where(m => m.Direction == MessageDirection.Output).ToList();
         var successful = messages.Count(m => m.Status == MessageStatus.Success);
         var failed = messages.Count(m => m.Status == MessageStatus.Failed);
 

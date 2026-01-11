@@ -1,0 +1,578 @@
+@page "/demo/statistics"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Management.Contracts.Models
+@inject IntegrationApiClient ApiClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Demo Statistics - QuickApiMapper Designer</PageTitle>
+
+<div class="fade-in">
+    @* Demo Mode Indicator *@
+    <DemoModeIndicator IsDemoMode="true" />
+
+    @* Header Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.BarChart" Class="mr-2" />
+                Demo Statistics Dashboard
+            </MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Real-time analytics and performance metrics
+            </MudText>
+        </div>
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Outlined"
+                      Color="Color.Primary"
+                      StartIcon="@Icons.Material.Filled.Refresh"
+                      OnClick="RefreshData"
+                      Disabled="@_loading">
+                Refresh
+            </MudButton>
+            <MudSwitch @bind-Value="_autoRefresh" Color="Color.Primary" Label="Auto-refresh" />
+        </MudStack>
+    </MudStack>
+
+    @* Filters *@
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect @bind-Value="_selectedIntegrationId"
+                          Label="Integration"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          T="Guid?"
+                          Clearable="true">
+                    <MudSelectItem Value="@((Guid?)null)">All Integrations</MudSelectItem>
+                    @foreach (var integration in _integrations)
+                    {
+                        <MudSelectItem Value="@((Guid?)integration.Id)">@integration.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect @bind-Value="_timeRange"
+                          Label="Time Range"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          T="string">
+                    <MudSelectItem Value="@("1h")">Last Hour</MudSelectItem>
+                    <MudSelectItem Value="@("24h")">Last 24 Hours</MudSelectItem>
+                    <MudSelectItem Value="@("7d")">Last 7 Days</MudSelectItem>
+                    <MudSelectItem Value="@("30d")">Last 30 Days</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          OnClick="ApplyFilters"
+                          FullWidth="true">
+                    Apply Filters
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton Variant="Variant.Outlined"
+                          Color="Color.Secondary"
+                          StartIcon="@Icons.Material.Filled.Download"
+                          OnClick="ExportData"
+                          FullWidth="true">
+                    Export Data
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @if (_loading)
+    {
+        <MudPaper Elevation="2" Class="pa-8">
+            <div class="text-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                <MudText Typo="Typo.body1" Class="mt-4">Loading statistics...</MudText>
+            </div>
+        </MudPaper>
+    }
+    else
+    {
+        @* Key Metrics Cards *@
+        <MudGrid Spacing="4" Class="mb-4">
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4 metric-card">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Message" Color="Color.Primary" Size="Size.Large" />
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary">Total</MudChip>
+                        </MudStack>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Total Transformations</MudText>
+                        <MudText Typo="Typo.h4" Class="font-bold">@_totalMessages.ToString("N0")</MudText>
+                        <MudText Typo="Typo.caption" Color="@(_messageChange >= 0 ? Color.Success : Color.Error)">
+                            @(_messageChange >= 0 ? "+" : "")@_messageChange.ToString("F1")% from previous period
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4 metric-card">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success">Success</MudChip>
+                        </MudStack>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Success Rate</MudText>
+                        <MudText Typo="Typo.h4" Class="font-bold" Color="Color.Success">@_successRate.ToString("F1")%</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @_successfulMessages successful / @_totalMessages total
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4 metric-card">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Speed" Color="Color.Info" Size="Size.Large" />
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">Avg</MudChip>
+                        </MudStack>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Avg Processing Time</MudText>
+                        <MudText Typo="Typo.h4" Class="font-bold" Color="Color.Info">@_avgProcessingTime.ToString("F0")ms</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Per message transformation
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4 metric-card">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Color="Color.Warning" Size="Size.Large" />
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning">Recent</MudChip>
+                        </MudStack>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Messages in Last Hour</MudText>
+                        <MudText Typo="Typo.h4" Class="font-bold" Color="Color.Warning">@_messagesLastHour.ToString("N0")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @(_messagesLastHour > 0 ? $"~{(_messagesLastHour / 60.0):F1} per minute" : "No activity")
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        @* Charts Section *@
+        <MudGrid Spacing="4" Class="mb-4">
+            @* Message Volume Over Time *@
+            <MudItem xs="12" md="8">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="font-bold mb-4">Message Volume Over Time</MudText>
+                    @if (_volumeChartData.Any())
+                    {
+                        <MudChart ChartType="ChartType.Line"
+                                 ChartSeries="@_volumeChartSeries"
+                                 XAxisLabels="@_volumeChartLabels.ToArray()"
+                                 Width="100%"
+                                 Height="300px"
+                                 ChartOptions="@_lineChartOptions" />
+                    }
+                    else
+                    {
+                        <div class="pa-8 text-center">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">No data available for selected time range</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            @* Success vs Failed Pie Chart *@
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="font-bold mb-4">Success vs Failed</MudText>
+                    @if (_totalMessages > 0)
+                    {
+                        <MudChart ChartType="ChartType.Donut"
+                                 InputData="@_statusChartData.ToArray()"
+                                 InputLabels="@_statusChartLabels.ToArray()"
+                                 Width="100%"
+                                 Height="300px"
+                                 ChartOptions="@_pieChartOptions" />
+                    }
+                    else
+                    {
+                        <div class="pa-8 text-center">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">No messages processed yet</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            @* Processing Time Distribution *@
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="font-bold mb-4">Processing Time Distribution</MudText>
+                    @if (_processingTimeData.Any())
+                    {
+                        <MudChart ChartType="ChartType.Bar"
+                                 ChartSeries="@_processingTimeSeries"
+                                 XAxisLabels="@_processingTimeLabels.ToArray()"
+                                 Width="100%"
+                                 Height="300px"
+                                 ChartOptions="@_barChartOptions" />
+                    }
+                    else
+                    {
+                        <div class="pa-8 text-center">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">No processing time data available</MudText>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        @* Integration Performance Table *@
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="font-bold mb-4">Integration Performance</MudText>
+            <MudTable Items="@_integrationStats" Hover="true" Dense="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Integration</MudTh>
+                    <MudTh>Total Messages</MudTh>
+                    <MudTh>Success Rate</MudTh>
+                    <MudTh>Avg Time (ms)</MudTh>
+                    <MudTh>Last Activity</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Integration">
+                        <MudText Typo="Typo.body2" Class="font-bold">@context.IntegrationName</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Total Messages">
+                        <MudText Typo="Typo.body2">@context.TotalMessages</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Success Rate">
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudProgressLinear Value="@context.SuccessRate" Size="Size.Small" Color="@GetSuccessRateColor(context.SuccessRate)" Style="min-width: 100px;" />
+                            <MudText Typo="Typo.body2">@context.SuccessRate.ToString("F1")%</MudText>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Avg Time">
+                        <MudChip T="string" Size="Size.Small" Color="@GetProcessingTimeColor(context.AvgProcessingTime)">
+                            @context.AvgProcessingTime.ToString("F0")ms
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Last Activity">
+                        <MudText Typo="Typo.body2">@GetRelativeTime(context.LastActivity)</MudText>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _autoRefresh = false;
+    private string _timeRange = "24h";
+    private Guid? _selectedIntegrationId = null;
+    private List<IntegrationDto> _integrations = new();
+
+    // Metrics
+    private int _totalMessages = 0;
+    private int _successfulMessages = 0;
+    private double _successRate = 0;
+    private double _avgProcessingTime = 0;
+    private int _messagesLastHour = 0;
+    private double _messageChange = 0;
+
+    // Chart data
+    private List<double> _volumeChartData = new();
+    private List<string> _volumeChartLabels = new();
+    private List<ChartSeries> _volumeChartSeries = new();
+    private List<double> _statusChartData = new();
+    private List<string> _statusChartLabels = new();
+    private List<double> _processingTimeData = new();
+    private List<string> _processingTimeLabels = new();
+    private List<ChartSeries> _processingTimeSeries = new();
+
+    private List<IntegrationStatDto> _integrationStats = new();
+
+    private ChartOptions _lineChartOptions = new()
+    {
+        YAxisTicks = 10,
+        MaxNumYAxisTicks = 10,
+        LineStrokeWidth = 3
+    };
+
+    private ChartOptions _pieChartOptions = new()
+    {
+        ChartPalette = new[] { "#4CAF50", "#F44336", "#FFC107" }
+    };
+
+    private ChartOptions _barChartOptions = new()
+    {
+        YAxisTicks = 10,
+        MaxNumYAxisTicks = 10
+    };
+
+    private System.Threading.Timer? _refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadIntegrationsAsync();
+        await LoadStatistics();
+        StartAutoRefresh();
+    }
+
+    private async Task LoadIntegrationsAsync()
+    {
+        try
+        {
+            _integrations = await ApiClient.GetAllIntegrationsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading integrations: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadStatistics()
+    {
+        try
+        {
+            _loading = true;
+            var (startDate, endDate) = GetDateRange(_timeRange);
+
+            // Load aggregate statistics
+            var allMessages = new List<CapturedMessageDto>();
+            foreach (var integration in _integrations)
+            {
+                if (_selectedIntegrationId == null || integration.Id == _selectedIntegrationId)
+                {
+                    var result = await ApiClient.QueryMessagesAsync(
+                        integration.Id,
+                        null,
+                        null,
+                        startDate,
+                        endDate,
+                        null,
+                        1,
+                        1000);
+
+                    if (result?.Items != null)
+                    {
+                        allMessages.AddRange(result.Items);
+                    }
+                }
+            }
+
+            // Calculate metrics - only count output messages (completed transformations)
+            var outputMessages = allMessages.Where(m => m.Direction == "Output").ToList();
+            _totalMessages = outputMessages.Count;
+            _successfulMessages = outputMessages.Count(m => m.Status == "Success");
+            _successRate = _totalMessages > 0 ? (double)_successfulMessages / _totalMessages * 100 : 0;
+
+            var messagesWithDuration = outputMessages.Where(m => m.Duration.HasValue).ToList();
+            _avgProcessingTime = messagesWithDuration.Any()
+                ? messagesWithDuration.Average(m => m.Duration!.Value.TotalMilliseconds)
+                : 0;
+
+            var oneHourAgo = DateTime.UtcNow.AddHours(-1);
+            _messagesLastHour = outputMessages.Count(m => m.Timestamp >= oneHourAgo);
+
+            // Calculate change from previous period
+            var previousPeriodStart = startDate.AddDays(-(endDate - startDate).TotalDays);
+            var previousResult = await ApiClient.QueryMessagesAsync(
+                _selectedIntegrationId,
+                null,
+                null,
+                previousPeriodStart,
+                startDate,
+                null,
+                1,
+                1);
+            var previousCount = previousResult?.TotalCount ?? 0;
+            _messageChange = previousCount > 0 ? ((_totalMessages - previousCount) / (double)previousCount * 100) : 0;
+
+            // Prepare chart data (using output messages only)
+            PrepareVolumeChart(outputMessages, startDate, endDate);
+            PrepareStatusChart(outputMessages);
+            PrepareProcessingTimeChart(outputMessages);
+            PrepareIntegrationStats(outputMessages);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading statistics: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void PrepareVolumeChart(List<CapturedMessageDto> messages, DateTime startDate, DateTime endDate)
+    {
+        var groupedByHour = messages
+            .GroupBy(m => new DateTime(m.Timestamp.Year, m.Timestamp.Month, m.Timestamp.Day, m.Timestamp.Hour, 0, 0))
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        _volumeChartLabels = groupedByHour.Select(g => g.Key.ToString("MM/dd HH:mm")).ToList();
+        _volumeChartData = groupedByHour.Select(g => (double)g.Count()).ToList();
+
+        _volumeChartSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Messages", Data = _volumeChartData.ToArray() }
+        };
+    }
+
+    private void PrepareStatusChart(List<CapturedMessageDto> messages)
+    {
+        var successful = messages.Count(m => m.Status == "Success");
+        var failed = messages.Count(m => m.Status == "Failed");
+        var pending = messages.Count(m => m.Status == "Pending");
+
+        _statusChartData = new List<double> { successful, failed, pending };
+        _statusChartLabels = new List<string> { "Success", "Failed", "Pending" };
+    }
+
+    private void PrepareProcessingTimeChart(List<CapturedMessageDto> messages)
+    {
+        var buckets = new[] { 0, 50, 100, 200, 500, 1000, 2000 };
+        var bucketCounts = new int[buckets.Length - 1];
+
+        foreach (var msg in messages.Where(m => m.Duration.HasValue))
+        {
+            var ms = msg.Duration!.Value.TotalMilliseconds;
+            for (int i = 0; i < buckets.Length - 1; i++)
+            {
+                if (ms >= buckets[i] && ms < buckets[i + 1])
+                {
+                    bucketCounts[i]++;
+                    break;
+                }
+            }
+        }
+
+        _processingTimeLabels = new List<string>();
+        _processingTimeData = new List<double>();
+
+        for (int i = 0; i < bucketCounts.Length; i++)
+        {
+            _processingTimeLabels.Add($"{buckets[i]}-{buckets[i + 1]}ms");
+            _processingTimeData.Add(bucketCounts[i]);
+        }
+
+        _processingTimeSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Message Count", Data = _processingTimeData.ToArray() }
+        };
+    }
+
+    private void PrepareIntegrationStats(List<CapturedMessageDto> messages)
+    {
+        _integrationStats = messages
+            .GroupBy(m => new { m.IntegrationId, m.IntegrationName })
+            .Select(g => new IntegrationStatDto
+            {
+                IntegrationName = g.Key.IntegrationName ?? "Unknown",
+                TotalMessages = g.Count(),
+                SuccessRate = g.Count() > 0 ? (double)g.Count(m => m.Status == "Success") / g.Count() * 100 : 0,
+                AvgProcessingTime = g.Where(m => m.Duration.HasValue).Any()
+                    ? g.Where(m => m.Duration.HasValue).Average(m => m.Duration!.Value.TotalMilliseconds)
+                    : 0,
+                LastActivity = g.Max(m => m.Timestamp)
+            })
+            .OrderByDescending(s => s.TotalMessages)
+            .ToList();
+    }
+
+    private (DateTime startDate, DateTime endDate) GetDateRange(string range)
+    {
+        var endDate = DateTime.UtcNow;
+        var startDate = range switch
+        {
+            "1h" => endDate.AddHours(-1),
+            "24h" => endDate.AddHours(-24),
+            "7d" => endDate.AddDays(-7),
+            "30d" => endDate.AddDays(-30),
+            _ => endDate.AddDays(-1)
+        };
+        return (startDate, endDate);
+    }
+
+    private async Task ApplyFilters()
+    {
+        await LoadStatistics();
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadStatistics();
+        Snackbar.Add("Statistics refreshed", Severity.Success);
+    }
+
+    private void ExportData()
+    {
+        Snackbar.Add("Export functionality coming soon", Severity.Info);
+    }
+
+    private Color GetSuccessRateColor(double rate)
+    {
+        if (rate >= 95) return Color.Success;
+        if (rate >= 80) return Color.Warning;
+        return Color.Error;
+    }
+
+    private Color GetProcessingTimeColor(double ms)
+    {
+        if (ms < 100) return Color.Success;
+        if (ms < 500) return Color.Warning;
+        return Color.Error;
+    }
+
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+        if (timeSpan.TotalMinutes < 1) return "just now";
+        if (timeSpan.TotalHours < 1) return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalDays < 1) return $"{(int)timeSpan.TotalHours}h ago";
+        return $"{(int)timeSpan.TotalDays}d ago";
+    }
+
+    private void StartAutoRefresh()
+    {
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            if (_autoRefresh)
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadStatistics();
+                    StateHasChanged();
+                });
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+
+    private class IntegrationStatDto
+    {
+        public string IntegrationName { get; set; } = string.Empty;
+        public int TotalMessages { get; set; }
+        public double SuccessRate { get; set; }
+        public double AvgProcessingTime { get; set; }
+        public DateTime LastActivity { get; set; }
+    }
+}
+
+<style>
+    .metric-card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+    }
+</style>

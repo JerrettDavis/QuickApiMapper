@@ -1,0 +1,692 @@
+@page "/demo/flow"
+@page "/demo/flow/{CorrelationId}"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Management.Contracts.Models
+@using Microsoft.AspNetCore.WebUtilities
+@using QuickApiMapper.Designer.Web.Components.Dialogs
+@inject IntegrationApiClient ApiClient
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Message Flow - QuickApiMapper Designer</PageTitle>
+
+<div class="fade-in">
+    @* Demo Mode Indicator *@
+    <DemoModeIndicator IsDemoMode="true" />
+
+    @* Header Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.Timeline" Class="mr-2" />
+                Live Message Flow
+            </MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Visualize message transformations in real-time
+            </MudText>
+        </div>
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Outlined"
+                      Color="Color.Primary"
+                      StartIcon="@Icons.Material.Filled.Refresh"
+                      OnClick="LoadMessagesAsync"
+                      Disabled="@_loading">
+                Refresh
+            </MudButton>
+            <MudSwitch @bind-Value="_autoRefresh" Color="Color.Primary" Label="Auto-refresh" />
+        </MudStack>
+    </MudStack>
+
+    @* Correlation ID Filter Alert *@
+    @if (!string.IsNullOrEmpty(_correlationIdFilter))
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4" Elevation="2">
+            <div class="d-flex align-center justify-space-between">
+                <div>
+                    <strong>Filtering by Correlation ID:</strong> @_correlationIdFilter
+                </div>
+                <MudButton Variant="Variant.Text"
+                          Color="Color.Info"
+                          Size="Size.Small"
+                          OnClick="ClearCorrelationFilter">
+                    Clear Filter
+                </MudButton>
+            </div>
+        </MudAlert>
+    }
+
+    @* Integration Filter *@
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="4">
+                <MudSelect @bind-Value="_selectedIntegrationId"
+                          Label="Filter by Integration"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          T="Guid?"
+                          Clearable="true"
+                          Disabled="@(!string.IsNullOrEmpty(_correlationIdFilter))">
+                    <MudSelectItem Value="@((Guid?)null)">All Integrations</MudSelectItem>
+                    @foreach (var integration in _integrations)
+                    {
+                        <MudSelectItem Value="@((Guid?)integration.Id)">@integration.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudSelect @bind-Value="_viewMode"
+                          Label="View Mode"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          T="string">
+                    <MudSelectItem Value="@("timeline")">Timeline View</MudSelectItem>
+                    <MudSelectItem Value="@("pipeline")">Pipeline View</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          OnClick="ApplyFilter"
+                          FullWidth="true"
+                          Disabled="@(!string.IsNullOrEmpty(_correlationIdFilter))">
+                    Apply Filter
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @* Message Flow Visualization *@
+    @if (_loading)
+    {
+        <MudPaper Elevation="2" Class="pa-8">
+            <div class="text-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                <MudText Typo="Typo.body1" Class="mt-4">Loading message flow...</MudText>
+            </div>
+        </MudPaper>
+    }
+    else if (!_messageFlows.Any())
+    {
+        <MudPaper Elevation="2" Class="pa-8">
+            <div class="text-center">
+                <MudIcon Icon="@Icons.Material.Filled.Timeline" Size="Size.Large" Color="Color.Secondary" />
+                <MudText Typo="Typo.h6" Class="mt-4">No message flows found</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Run some demo scenarios to see messages flowing through the system
+                </MudText>
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          StartIcon="@Icons.Material.Filled.PlayArrow"
+                          Href="/demo/runner"
+                          Class="mt-4">
+                    Go to Demo Runner
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    else
+    {
+        @if (_viewMode == "timeline")
+        {
+            <MudTimeline TimelineOrientation="TimelineOrientation.Vertical" TimelinePosition="TimelinePosition.Alternate">
+                @foreach (var flow in _messageFlows.OrderByDescending(f => f.Timestamp))
+                {
+                    <MudTimelineItem Color="@GetStatusColor(flow.Status)" Elevation="2">
+                        <MudPaper Elevation="0" Class="pa-4">
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.h6" Class="font-bold">@flow.IntegrationName</MudText>
+                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(flow.Status)">
+                                        @flow.Status
+                                    </MudChip>
+                                </MudStack>
+
+                                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">@flow.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+                                    @if (flow.Duration.HasValue)
+                                    {
+                                        <MudDivider Vertical="true" FlexItem="true" />
+                                        <MudIcon Icon="@Icons.Material.Filled.Speed" Size="Size.Small" />
+                                        <MudText Typo="Typo.body2">@flow.Duration.Value.TotalMilliseconds.ToString("F0")ms</MudText>
+                                    }
+                                </MudStack>
+
+                                <MudDivider />
+
+                                @* Flow Pipeline *@
+                                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="flow-pipeline">
+                                    <MudPaper Elevation="1" Class="pa-2 flow-stage flow-stage-timeline-input">
+                                        <MudStack Spacing="1" AlignItems="AlignItems.Center">
+                                            <MudIcon Icon="@Icons.Material.Filled.Input" />
+                                            <MudText Typo="Typo.caption">Input</MudText>
+                                            <MudText Typo="Typo.body2" Class="font-bold">@flow.InputFormat</MudText>
+                                        </MudStack>
+                                    </MudPaper>
+
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Color="Color.Primary" />
+
+                                    <MudPaper Elevation="1" Class="pa-2 flow-stage flow-stage-timeline-transform">
+                                        <MudStack Spacing="1" AlignItems="AlignItems.Center">
+                                            <MudIcon Icon="@Icons.Material.Filled.Transform" />
+                                            <MudText Typo="Typo.caption">Transform</MudText>
+                                            <MudText Typo="Typo.body2" Class="font-bold">@flow.TransformationCount mappings</MudText>
+                                        </MudStack>
+                                    </MudPaper>
+
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Color="Color.Primary" />
+
+                                    <MudPaper Elevation="1" Class="pa-2 flow-stage flow-stage-timeline-output">
+                                        <MudStack Spacing="1" AlignItems="AlignItems.Center">
+                                            <MudIcon Icon="@Icons.Material.Filled.Output" />
+                                            <MudText Typo="Typo.caption">Output</MudText>
+                                            <MudText Typo="Typo.body2" Class="font-bold">@flow.OutputFormat</MudText>
+                                        </MudStack>
+                                    </MudPaper>
+                                </MudStack>
+
+                                <MudDivider />
+
+                                <MudStack Row="true" Spacing="2">
+                                    <MudButton Variant="Variant.Outlined"
+                                              Size="Size.Small"
+                                              StartIcon="@Icons.Material.Filled.Visibility"
+                                              OnClick="@(() => ViewMessageDetails(flow.CorrelationId))">
+                                        View Details
+                                    </MudButton>
+                                    <MudButton Variant="Variant.Text"
+                                              Size="Size.Small"
+                                              StartIcon="@Icons.Material.Filled.CompareArrows"
+                                              OnClick="@(() => CompareMessages(flow.CorrelationId))">
+                                        Compare Input/Output
+                                    </MudButton>
+                                </MudStack>
+                            </MudStack>
+                        </MudPaper>
+                    </MudTimelineItem>
+                }
+            </MudTimeline>
+        }
+        else
+        {
+            @* Pipeline View *@
+            <MudStack Spacing="3">
+                @foreach (var flow in _messageFlows.OrderByDescending(f => f.Timestamp))
+                {
+                    <MudPaper Elevation="2" Class="pa-4 pipeline-card">
+                        <MudStack Spacing="3">
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.h6" Class="font-bold">@flow.IntegrationName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @flow.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                    </MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="2">
+                                    @if (flow.Duration.HasValue)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Speed">
+                                            @flow.Duration.Value.TotalMilliseconds.ToString("F0")ms
+                                        </MudChip>
+                                    }
+                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(flow.Status)">
+                                        @flow.Status
+                                    </MudChip>
+                                </MudStack>
+                            </MudStack>
+
+                            @* Horizontal Pipeline *@
+                            <div class="horizontal-pipeline">
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" md="4">
+                                        <MudPaper Elevation="1" Class="pa-3 pipeline-stage pipeline-stage-input">
+                                            <MudStack Spacing="2">
+                                                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Input" />
+                                                    <MudText Typo="Typo.subtitle1" Class="font-bold">Input</MudText>
+                                                </MudStack>
+                                                <MudText Typo="Typo.body2">Format: @flow.InputFormat</MudText>
+                                                <MudText Typo="Typo.caption" Style="font-family: monospace;">
+                                                    ID: @flow.CorrelationId.Substring(0, 8)...
+                                                </MudText>
+                                            </MudStack>
+                                        </MudPaper>
+                                    </MudItem>
+
+                                    <MudItem xs="12" md="4">
+                                        <MudPaper Elevation="1" Class="pa-3 pipeline-stage pipeline-stage-transform">
+                                            <MudStack Spacing="2">
+                                                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Transform" />
+                                                    <MudText Typo="Typo.subtitle1" Class="font-bold">Transform</MudText>
+                                                </MudStack>
+                                                <MudText Typo="Typo.body2">@flow.TransformationCount field mappings</MudText>
+                                                <MudText Typo="Typo.caption">Data conversion & mapping</MudText>
+                                            </MudStack>
+                                        </MudPaper>
+                                    </MudItem>
+
+                                    <MudItem xs="12" md="4">
+                                        <MudPaper Elevation="1" Class="pa-3 pipeline-stage pipeline-stage-output">
+                                            <MudStack Spacing="2">
+                                                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Output" />
+                                                    <MudText Typo="Typo.subtitle1" Class="font-bold">Output</MudText>
+                                                </MudStack>
+                                                <MudText Typo="Typo.body2">Format: @flow.OutputFormat</MudText>
+                                                <MudText Typo="Typo.caption">
+                                                    Status: @flow.Status
+                                                </MudText>
+                                            </MudStack>
+                                        </MudPaper>
+                                    </MudItem>
+                                </MudGrid>
+                            </div>
+
+                            <MudStack Row="true" Spacing="2">
+                                <MudButton Variant="Variant.Outlined"
+                                          Size="Size.Small"
+                                          StartIcon="@Icons.Material.Filled.Visibility"
+                                          OnClick="@(() => ViewMessageDetails(flow.CorrelationId))">
+                                    View Details
+                                </MudButton>
+                                <MudButton Variant="Variant.Text"
+                                          Size="Size.Small"
+                                          StartIcon="@Icons.Material.Filled.CompareArrows"
+                                          OnClick="@(() => CompareMessages(flow.CorrelationId))">
+                                    Compare Input/Output
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+
+        @* Pagination *@
+        <div class="mt-4 d-flex justify-center">
+            <MudPagination Count="@_totalPages"
+                          Selected="@_currentPage"
+                          SelectedChanged="OnPageChanged"
+                          ShowFirstButton="true"
+                          ShowLastButton="true" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? CorrelationId { get; set; }
+
+    private bool _loading = true;
+    private bool _autoRefresh = false;
+    private string _viewMode = "timeline";
+    private Guid? _selectedIntegrationId = null;
+    private string? _correlationIdFilter = null;
+    private List<IntegrationDto> _integrations = new();
+    private List<MessageFlowDto> _messageFlows = new();
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    private int _totalPages = 0;
+    private System.Threading.Timer? _refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check for correlation ID from route parameter or query string
+        if (!string.IsNullOrEmpty(CorrelationId))
+        {
+            _correlationIdFilter = CorrelationId;
+        }
+        else
+        {
+            // Check query string for correlation parameter
+            var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("correlation", out var correlationValue))
+            {
+                _correlationIdFilter = correlationValue.ToString();
+            }
+        }
+
+        await LoadIntegrationsAsync();
+        await LoadMessagesAsync();
+        StartAutoRefresh();
+    }
+
+    private async Task LoadIntegrationsAsync()
+    {
+        try
+        {
+            _integrations = await ApiClient.GetAllIntegrationsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading integrations: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadMessagesAsync()
+    {
+        try
+        {
+            _loading = true;
+            var result = await ApiClient.QueryMessagesAsync(
+                _selectedIntegrationId,
+                null,
+                null,
+                DateTime.UtcNow.AddDays(-7),
+                DateTime.UtcNow,
+                _correlationIdFilter,
+                _currentPage,
+                _pageSize);
+
+            if (result != null)
+            {
+                _messageFlows = ConvertToMessageFlows(result.Items);
+                _totalPages = result.TotalPages;
+
+                // If filtering by correlation ID and we found messages, show a notification
+                if (!string.IsNullOrEmpty(_correlationIdFilter) && _messageFlows.Any())
+                {
+                    Snackbar.Add($"Showing messages for correlation ID: {_correlationIdFilter.Substring(0, 8)}...", Severity.Info);
+                }
+                else if (!string.IsNullOrEmpty(_correlationIdFilter) && !_messageFlows.Any())
+                {
+                    Snackbar.Add($"No messages found for correlation ID: {_correlationIdFilter}", Severity.Warning);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading messages: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private List<MessageFlowDto> ConvertToMessageFlows(List<CapturedMessageDto> messages)
+    {
+        var flows = new List<MessageFlowDto>();
+        var groupedByCorrelation = messages.GroupBy(m => m.CorrelationId);
+
+        foreach (var group in groupedByCorrelation)
+        {
+            var inputMsg = group.FirstOrDefault(m => m.Direction == "Input");
+            var outputMsg = group.FirstOrDefault(m => m.Direction == "Output");
+
+            if (inputMsg != null)
+            {
+                var integration = _integrations.FirstOrDefault(i => i.Id == inputMsg.IntegrationId);
+                flows.Add(new MessageFlowDto
+                {
+                    CorrelationId = group.Key,
+                    IntegrationName = inputMsg.IntegrationName ?? "Unknown",
+                    Timestamp = inputMsg.Timestamp,
+                    Status = outputMsg?.Status ?? inputMsg.Status,
+                    Duration = outputMsg?.Duration ?? inputMsg.Duration,
+                    InputFormat = integration?.SourceType ?? "Unknown",
+                    OutputFormat = integration?.DestinationType ?? "Unknown",
+                    TransformationCount = integration?.FieldMappings?.Count ?? 0
+                });
+            }
+        }
+
+        return flows;
+    }
+
+    private async Task ApplyFilter()
+    {
+        _currentPage = 1;
+        await LoadMessagesAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadMessagesAsync();
+    }
+
+    private void ClearCorrelationFilter()
+    {
+        Navigation.NavigateTo("/demo/flow", forceLoad: true);
+    }
+
+    private async Task ViewMessageDetails(string correlationId)
+    {
+        try
+        {
+            Snackbar.Add($"Loading details for correlation ID: {correlationId.Substring(0, 8)}...", Severity.Info);
+
+            // Fetch messages for this correlation ID
+            var result = await ApiClient.QueryMessagesAsync(
+                null,
+                null,
+                null,
+                DateTime.UtcNow.AddDays(-7),
+                DateTime.UtcNow,
+                correlationId,
+                1,
+                100);
+
+            if (result?.Items == null || !result.Items.Any())
+            {
+                Snackbar.Add("No messages found for this correlation ID", Severity.Warning);
+                return;
+            }
+
+            var inputMsg = result.Items.FirstOrDefault(m => m.Direction == "Input");
+            var outputMsg = result.Items.FirstOrDefault(m => m.Direction == "Output");
+
+            var parameters = new DialogParameters
+            {
+                { "CorrelationId", correlationId },
+                { "InputMessage", inputMsg },
+                { "OutputMessage", outputMsg }
+            };
+
+            var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true,
+                CloseButton = true,
+                CloseOnEscapeKey = true
+            };
+
+            Snackbar.Add("Opening dialog...", Severity.Info);
+            await DialogService.ShowAsync<MessageDetailsDialog>("Message Details", parameters, options);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading message details: {ex.Message}\n{ex.StackTrace}", Severity.Error);
+        }
+    }
+
+    private async Task CompareMessages(string correlationId)
+    {
+        try
+        {
+            Snackbar.Add($"Loading comparison for correlation ID: {correlationId.Substring(0, 8)}...", Severity.Info);
+
+            // Fetch messages for this correlation ID
+            var result = await ApiClient.QueryMessagesAsync(
+                null,
+                null,
+                null,
+                DateTime.UtcNow.AddDays(-7),
+                DateTime.UtcNow,
+                correlationId,
+                1,
+                100);
+
+            if (result?.Items == null || !result.Items.Any())
+            {
+                Snackbar.Add("No messages found for this correlation ID", Severity.Warning);
+                return;
+            }
+
+            var inputMsg = result.Items.FirstOrDefault(m => m.Direction == "Input");
+            var outputMsg = result.Items.FirstOrDefault(m => m.Direction == "Output");
+
+            if (inputMsg == null || outputMsg == null)
+            {
+                Snackbar.Add("Could not find both input and output messages", Severity.Warning);
+                return;
+            }
+
+            var parameters = new DialogParameters
+            {
+                { "CorrelationId", correlationId },
+                { "InputMessage", inputMsg },
+                { "OutputMessage", outputMsg }
+            };
+
+            var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.ExtraLarge,
+                FullWidth = true,
+                CloseButton = true,
+                CloseOnEscapeKey = true
+            };
+
+            Snackbar.Add("Opening comparison dialog...", Severity.Info);
+            await DialogService.ShowAsync<MessageCompareDialog>("Compare Input/Output", parameters, options);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading messages: {ex.Message}\n{ex.StackTrace}", Severity.Error);
+        }
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Success" => Color.Success,
+            "Failed" => Color.Error,
+            "Pending" => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private void StartAutoRefresh()
+    {
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            if (_autoRefresh)
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadMessagesAsync();
+                    StateHasChanged();
+                });
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+
+    private class MessageFlowDto
+    {
+        public string CorrelationId { get; set; } = string.Empty;
+        public string IntegrationName { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public TimeSpan? Duration { get; set; }
+        public string InputFormat { get; set; } = string.Empty;
+        public string OutputFormat { get; set; } = string.Empty;
+        public int TransformationCount { get; set; }
+    }
+}
+
+<style>
+    .flow-pipeline {
+        flex-wrap: wrap;
+    }
+
+    .flow-stage {
+        min-width: 120px;
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .flow-stage:hover {
+        transform: scale(1.05);
+    }
+
+    .pipeline-card {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .pipeline-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+
+    .pipeline-stage {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .pipeline-stage:hover {
+        transform: scale(1.02);
+    }
+
+    /* Timeline view - solid color backgrounds with dark text */
+    .flow-stage-timeline-input {
+        background: #2196F3 !important;
+        color: white !important;
+    }
+
+    .flow-stage-timeline-input * {
+        color: white !important;
+    }
+
+    .flow-stage-timeline-transform {
+        background: #FF9800 !important;
+        color: white !important;
+    }
+
+    .flow-stage-timeline-transform * {
+        color: white !important;
+    }
+
+    .flow-stage-timeline-output {
+        background: #4CAF50 !important;
+        color: white !important;
+    }
+
+    .flow-stage-timeline-output * {
+        color: white !important;
+    }
+
+    /* Pipeline view - gradient backgrounds with forced white text */
+    .pipeline-stage-input {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+    }
+
+    .pipeline-stage-input * {
+        color: white !important;
+    }
+
+    .pipeline-stage-transform {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+        color: white !important;
+    }
+
+    .pipeline-stage-transform * {
+        color: white !important;
+    }
+
+    .pipeline-stage-output {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+        color: white !important;
+    }
+
+    .pipeline-stage-output * {
+        color: white !important;
+    }
+</style>

@@ -1,0 +1,181 @@
+@using QuickApiMapper.Management.Contracts.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            @* Correlation ID *@
+            <MudPaper Elevation="0" Class="pa-3" Style="background: var(--mud-palette-background-grey);">
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.Link" Size="Size.Small" />
+                    <MudText Typo="Typo.body2"><strong>Correlation ID:</strong></MudText>
+                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@CorrelationId</MudText>
+                </MudStack>
+            </MudPaper>
+
+            @* Input Message *@
+            @if (InputMessage != null)
+            {
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.h6" Class="font-bold">
+                                <MudIcon Icon="@Icons.Material.Filled.Input" Class="mr-2" />
+                                Input Message
+                            </MudText>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">@InputMessage.Direction</MudChip>
+                        </MudStack>
+
+                        <MudDivider />
+
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Integration</MudText>
+                            <MudText Typo="Typo.body2">@InputMessage.IntegrationName</MudText>
+                        </MudStack>
+
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Timestamp</MudText>
+                            <MudText Typo="Typo.body2">@InputMessage.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff")</MudText>
+                        </MudStack>
+
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(InputMessage.Status)">@InputMessage.Status</MudChip>
+                        </MudStack>
+
+                        @if (InputMessage.Metadata != null && InputMessage.Metadata.Any())
+                        {
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Metadata</MudText>
+                                <MudPaper Elevation="0" Class="pa-2" Style="background: var(--mud-palette-background-grey);">
+                                    @foreach (var kvp in InputMessage.Metadata)
+                                    {
+                                        <MudText Typo="Typo.caption">
+                                            <strong>@kvp.Key:</strong> @kvp.Value
+                                        </MudText>
+                                    }
+                                </MudPaper>
+                            </MudStack>
+                        }
+
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Payload</MudText>
+                            <SyntaxHighlighter Content="@InputMessage.Payload" Language="@DetectLanguage(InputMessage.Payload)" />
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @* Output Message *@
+            @if (OutputMessage != null)
+            {
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.h6" Class="font-bold">
+                                <MudIcon Icon="@Icons.Material.Filled.Output" Class="mr-2" />
+                                Output Message
+                            </MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(OutputMessage.Status)">@OutputMessage.Status</MudChip>
+                        </MudStack>
+
+                        <MudDivider />
+
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Integration</MudText>
+                            <MudText Typo="Typo.body2">@OutputMessage.IntegrationName</MudText>
+                        </MudStack>
+
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Timestamp</MudText>
+                            <MudText Typo="Typo.body2">@OutputMessage.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff")</MudText>
+                        </MudStack>
+
+                        @if (OutputMessage.Duration.HasValue)
+                        {
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Processing Duration</MudText>
+                                <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Speed">
+                                    @OutputMessage.Duration.Value.TotalMilliseconds.ToString("F0")ms
+                                </MudChip>
+                            </MudStack>
+                        }
+
+                        @if (!string.IsNullOrEmpty(OutputMessage.ErrorMessage))
+                        {
+                            <MudAlert Severity="Severity.Error" Dense="true">
+                                <MudText Typo="Typo.body2"><strong>Error:</strong> @OutputMessage.ErrorMessage</MudText>
+                            </MudAlert>
+                        }
+
+                        @if (OutputMessage.Metadata != null && OutputMessage.Metadata.Any())
+                        {
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Metadata</MudText>
+                                <MudPaper Elevation="0" Class="pa-2" Style="background: var(--mud-palette-background-grey);">
+                                    @foreach (var kvp in OutputMessage.Metadata)
+                                    {
+                                        <MudText Typo="Typo.caption">
+                                            <strong>@kvp.Key:</strong> @kvp.Value
+                                        </MudText>
+                                    }
+                                </MudPaper>
+                            </MudStack>
+                        }
+
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Payload</MudText>
+                            <SyntaxHighlighter Content="@OutputMessage.Payload" Language="@DetectLanguage(OutputMessage.Payload)" />
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public string CorrelationId { get; set; } = string.Empty;
+
+    [Parameter]
+    public CapturedMessageDto? InputMessage { get; set; }
+
+    [Parameter]
+    public CapturedMessageDto? OutputMessage { get; set; }
+
+    private void Close()
+    {
+        MudDialog.Close();
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Success" => Color.Success,
+            "Failed" => Color.Error,
+            "Pending" => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private string DetectLanguage(string payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload))
+            return "text";
+
+        var trimmed = payload.TrimStart();
+        if (trimmed.StartsWith("{") || trimmed.StartsWith("["))
+            return "json";
+        if (trimmed.StartsWith("<"))
+            return "xml";
+
+        return "text";
+    }
+}
