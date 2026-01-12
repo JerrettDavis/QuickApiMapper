@@ -68,5 +68,7 @@
     <!-- Web Packages -->
     <PackageVersion Include="Scalar.AspNetCore" Version="2.12.4" />
     <PackageVersion Include="MudBlazor" Version="8.15.0" />
+    <!-- SOAP Packages -->
+    <PackageVersion Include="SoapCore" Version="1.2.1.12" />
   </ItemGroup>
 </Project>

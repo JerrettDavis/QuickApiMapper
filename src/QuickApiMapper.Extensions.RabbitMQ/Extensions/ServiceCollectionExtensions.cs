@@ -1,8 +1,10 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using QuickApiMapper.Application.Destinations;
 using QuickApiMapper.Extensions.RabbitMQ.Destinations;
+using QuickApiMapper.Extensions.RabbitMQ.Options;
 using QuickApiMapper.Extensions.RabbitMQ.Workers;
 
 namespace QuickApiMapper.Extensions.RabbitMQ.Extensions;
@@ -37,6 +39,9 @@ public static class ServiceCollectionExtensions
         };
         configureOptions?.Invoke(options);
 
+        // Validate options
+        ValidateOptions(options);
+
         // Register RabbitMQ connection factory as singleton
         services.AddSingleton<IConnectionFactory>(sp =>
         {
@@ -65,7 +70,11 @@ public static class ServiceCollectionExtensions
             return factory;
         });
 
-        // Register destination handler (both as interface and concrete type for testing)
+        // Register destination handler with keyed service for modern .NET
+        services.AddKeyedSingleton<IDestinationHandler, RabbitMqDestinationHandler>("RabbitMQ");
+        services.AddKeyedSingleton<IDestinationHandler, RabbitMqDestinationHandler>("RABBITMQ"); // Case variation
+
+        // Also register non-keyed for backward compatibility (and concrete type for testing)
         services.AddSingleton<RabbitMqDestinationHandler>();
         services.AddSingleton<IDestinationHandler>(sp => sp.GetRequiredService<RabbitMqDestinationHandler>());
 
@@ -81,83 +90,45 @@ public static class ServiceCollectionExtensions
                     var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<RabbitMqConsumer>>();
                     return new RabbitMqConsumer(
                         logger,
+                        sp,
                         factory,
                         queueConfig.QueueName,
                         queueConfig.ExchangeName,
-                        queueConfig.RoutingKey);
+                        queueConfig.RoutingKey,
+                        options.PrefetchCount,
+                        queueConfig.DefaultIntegrationName);
                 });
             }
         }
 
         return services;
     }
-}
 
-/// <summary>
-/// Options for configuring RabbitMQ support in QuickApiMapper.
-/// </summary>
-public class RabbitMqOptions
-{
-    /// <summary>
-    /// RabbitMQ host name or IP address.
-    /// </summary>
-    public string HostName { get; set; } = "localhost";
+    private static void ValidateOptions(RabbitMqOptions options)
+    {
+        var context = new ValidationContext(options);
+        var results = new List<ValidationResult>();
 
-    /// <summary>
-    /// RabbitMQ port. Default is 5672 (5671 for SSL).
-    /// </summary>
-    public int Port { get; set; } = 5672;
+        if (!Validator.TryValidateObject(options, context, results, validateAllProperties: true))
+        {
+            var errors = string.Join("; ", results.Select(r => r.ErrorMessage));
+            throw new ArgumentException($"Invalid RabbitMqOptions configuration: {errors}");
+        }
 
-    /// <summary>
-    /// Virtual host. Default is "/".
-    /// </summary>
-    public string VirtualHost { get; set; } = "/";
+        // Validate nested queue configurations
+        if (options.InputQueues != null)
+        {
+            foreach (var queueConfig in options.InputQueues)
+            {
+                var queueContext = new ValidationContext(queueConfig);
+                var queueResults = new List<ValidationResult>();
 
-    /// <summary>
-    /// Username for authentication. Default is "guest".
-    /// </summary>
-    public string UserName { get; set; } = "guest";
-
-    /// <summary>
-    /// Password for authentication. Default is "guest".
-    /// </summary>
-    public string Password { get; set; } = "guest";
-
-    /// <summary>
-    /// Whether to use SSL/TLS connection.
-    /// </summary>
-    public bool UseSsl { get; set; } = false;
-
-    /// <summary>
-    /// Input queues to consume from.
-    /// Used for creating background workers.
-    /// </summary>
-    public List<RabbitMqQueueConfig>? InputQueues { get; set; }
-
-    /// <summary>
-    /// Maximum number of concurrent message processing calls per consumer.
-    /// Default is 10.
-    /// </summary>
-    public int PrefetchCount { get; set; } = 10;
-}
-
-/// <summary>
-/// Configuration for a RabbitMQ queue to consume from.
-/// </summary>
-public class RabbitMqQueueConfig
-{
-    /// <summary>
-    /// Queue name to consume from.
-    /// </summary>
-    public string QueueName { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Exchange name to bind to (optional).
-    /// </summary>
-    public string? ExchangeName { get; set; }
-
-    /// <summary>
-    /// Routing key for exchange binding (optional).
-    /// </summary>
-    public string? RoutingKey { get; set; }
+                if (!Validator.TryValidateObject(queueConfig, queueContext, queueResults, validateAllProperties: true))
+                {
+                    var queueErrors = string.Join("; ", queueResults.Select(r => r.ErrorMessage));
+                    throw new ArgumentException($"Invalid RabbitMqQueueConfig: {queueErrors}");
+                }
+            }
+        }
+    }
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <CancelFulfillmentRequest xmlns="http://warehouse.example.com/">
+      <OrderNumber>ORD-2026-001</OrderNumber>
+      <!-- OR use ConfirmationNumber instead -->
+      <!-- <ConfirmationNumber>WH-20260110-A1B2C3D4</ConfirmationNumber> -->
+      <Reason>Customer requested cancellation</Reason>
+      <RequestedBy>customer.service@example.com</RequestedBy>
+    </CancelFulfillmentRequest>
+  </soap:Body>
+</soap:Envelope>

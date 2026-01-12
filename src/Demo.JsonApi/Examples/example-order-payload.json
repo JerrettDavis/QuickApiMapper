@@ -1,0 +1,22 @@
+{
+  "customerName": "Example Customer",
+  "customerEmail": "customer@example.com",
+  "totalAmount": 1299.99,
+  "currency": "USD",
+  "items": [
+    {
+      "sku": "LAPTOP-MB-PRO",
+      "productName": "MacBook Pro 14 inch",
+      "quantity": 1,
+      "unitPrice": 1299.99
+    }
+  ],
+  "shippingAddress": {
+    "street": "123 Demo Street",
+    "city": "San Francisco",
+    "state": "CA",
+    "postalCode": "94105",
+    "country": "USA"
+  },
+  "priority": "EXPRESS"
+}

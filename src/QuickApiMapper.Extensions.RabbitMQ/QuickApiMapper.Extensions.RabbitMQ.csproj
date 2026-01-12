@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\QuickApiMapper.Contracts\QuickApiMapper.Contracts.csproj" />
     <ProjectReference Include="..\QuickApiMapper.Application\QuickApiMapper.Application.csproj" />
+    <ProjectReference Include="..\QuickApiMapper.MessageCapture.Abstractions\QuickApiMapper.MessageCapture.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

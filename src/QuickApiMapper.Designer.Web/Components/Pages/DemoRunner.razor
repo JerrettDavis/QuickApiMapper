@@ -1,0 +1,561 @@
+@page "/demo/runner"
+@using QuickApiMapper.Designer.Web.Services
+@using QuickApiMapper.Management.Contracts.Models
+@using System.Text.Json
+@inject IntegrationApiClient ApiClient
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Demo Runner - QuickApiMapper Designer</PageTitle>
+
+<div class="fade-in">
+    @* Demo Mode Indicator *@
+    <DemoModeIndicator IsDemoMode="true" />
+
+    @* Header Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.PlayArrow" Class="mr-2" />
+                Interactive Demo Runner
+            </MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Test integrations with pre-configured sample requests
+            </MudText>
+        </div>
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudPaper Elevation="2" Class="pa-8">
+            <div class="text-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                <MudText Typo="Typo.body1" Class="mt-4">Loading demo integrations...</MudText>
+            </div>
+        </MudPaper>
+    }
+    else if (!_integrations.Any())
+    {
+        <MudPaper Elevation="2" Class="pa-8">
+            <div class="text-center">
+                <MudIcon Icon="@Icons.Material.Filled.IntegrationInstructions" Size="Size.Large" Color="Color.Secondary" />
+                <MudText Typo="Typo.h6" Class="mt-4">No Integrations Available</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Create some integrations first to test them here
+                </MudText>
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          StartIcon="@Icons.Material.Filled.Add"
+                          Href="/create">
+                    Create Integration
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid Spacing="4">
+            @* Left Panel - Integration Selection & Sample Requests *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h5" Class="font-bold mb-4">Select Integration</MudText>
+
+                    @* Integration Cards *@
+                    <MudStack Spacing="3">
+                        @foreach (var integration in _integrations.Where(i => i.IsActive))
+                        {
+                            <MudPaper Elevation="@(_selectedIntegration?.Id == integration.Id ? 4 : 1)"
+                                     Class="pa-3 integration-card"
+                                     Style="@(_selectedIntegration?.Id == integration.Id ? "border: 2px solid var(--mud-palette-primary);" : "cursor: pointer;")"
+                                     @onclick="() => SelectIntegration(integration)">
+                                <MudStack Spacing="2">
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudText Typo="Typo.h6" Class="font-bold">@integration.Name</MudText>
+                                        @if (_selectedIntegration?.Id == integration.Id)
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Primary" />
+                                        }
+                                    </MudStack>
+                                    <MudStack Row="true" Spacing="2">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Icon="@Icons.Material.Filled.Input">
+                                            @integration.SourceType
+                                        </MudChip>
+                                        <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" />
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.Output">
+                                            @integration.DestinationType
+                                        </MudChip>
+                                    </MudStack>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        Endpoint: @integration.Endpoint
+                                    </MudText>
+                                </MudStack>
+                            </MudPaper>
+                        }
+                    </MudStack>
+                </MudPaper>
+
+                @if (_selectedIntegration != null)
+                {
+                    <MudPaper Elevation="2" Class="pa-4 mt-4">
+                        <MudText Typo="Typo.h5" Class="font-bold mb-4">Sample Request</MudText>
+
+                        @* Sample Request Editor *@
+                        <MudStack Spacing="3">
+                            <MudSelect @bind-Value="_selectedSample"
+                                      Label="Select Sample"
+                                      Variant="Variant.Outlined"
+                                      T="string">
+                                @foreach (var sample in GetSampleRequests(_selectedIntegration))
+                                {
+                                    <MudSelectItem Value="@sample.Name">@sample.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+
+                            @if (!string.IsNullOrEmpty(_selectedSample))
+                            {
+                                var sample = GetSampleRequests(_selectedIntegration).FirstOrDefault(s => s.Name == _selectedSample);
+                                if (sample != null)
+                                {
+                                    <MudPaper Elevation="0" Class="pa-3" Style="background: #f5f5f5;">
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                                            <MudText Typo="Typo.body1" Class="font-bold">Request Payload</MudText>
+                                            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                                          Size="Size.Small"
+                                                          OnClick="() => CopyToClipboard(sample.Payload)"
+                                                          title="Copy to clipboard" />
+                                        </MudStack>
+                                        <SyntaxHighlighter Content="@sample.Payload" Language="@_selectedIntegration.SourceType.ToLower()" ShowCopyButton="false" />
+                                    </MudPaper>
+
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @sample.Description
+                                    </MudText>
+
+                                    <MudButton Variant="Variant.Filled"
+                                              Color="Color.Primary"
+                                              Size="Size.Large"
+                                              StartIcon="@Icons.Material.Filled.PlayArrow"
+                                              OnClick="ExecuteSample"
+                                              Disabled="@_executing"
+                                              FullWidth="true">
+                                        @if (_executing)
+                                        {
+                                            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
+                                            <span>Executing...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Execute Request</span>
+                                        }
+                                    </MudButton>
+                                }
+                            }
+                        </MudStack>
+                    </MudPaper>
+                }
+            </MudItem>
+
+            @* Right Panel - Results *@
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                        <MudText Typo="Typo.h5" Class="font-bold">Execution Results</MudText>
+                        @if (_lastExecutionResult != null)
+                        {
+                            <MudChip T="string"
+                                    Size="Size.Medium"
+                                    Color="@(_lastExecutionResult.Success ? Color.Success : Color.Error)"
+                                    Icon="@(_lastExecutionResult.Success ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Error)">
+                                @(_lastExecutionResult.Success ? "Success" : "Failed")
+                            </MudChip>
+                        }
+                    </MudStack>
+
+                    @if (_lastExecutionResult == null)
+                    {
+                        <div class="pa-8 text-center">
+                            <MudIcon Icon="@Icons.Material.Filled.PlayCircle" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body1" Class="mt-4">No results yet</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                Select an integration and execute a sample request
+                            </MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <MudStack Spacing="3">
+                            @* Execution Info *@
+                            <MudGrid Spacing="2">
+                                <MudItem xs="6">
+                                    <MudPaper Elevation="1" Class="pa-2">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Execution Time</MudText>
+                                            <MudText Typo="Typo.body1" Class="font-bold">@_lastExecutionResult.Duration.TotalMilliseconds.ToString("F0")ms</MudText>
+                                        </MudStack>
+                                    </MudPaper>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudPaper Elevation="1" Class="pa-2">
+                                        <MudStack Spacing="1">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Status Code</MudText>
+                                            <MudText Typo="Typo.body1" Class="font-bold">@_lastExecutionResult.StatusCode</MudText>
+                                        </MudStack>
+                                    </MudPaper>
+                                </MudItem>
+                            </MudGrid>
+
+                            @if (!string.IsNullOrEmpty(_lastExecutionResult.CorrelationId))
+                            {
+                                <MudAlert Severity="Severity.Info" Dense="true">
+                                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                        <MudText Typo="Typo.body2">
+                                            Correlation ID: <code style="font-family: monospace;">@_lastExecutionResult.CorrelationId</code>
+                                        </MudText>
+                                        <MudButton Variant="Variant.Text"
+                                                  Size="Size.Small"
+                                                  Color="Color.Info"
+                                                  OnClick="() => ViewCapturedMessages(_lastExecutionResult.CorrelationId)">
+                                            View in Message Flow
+                                        </MudButton>
+                                    </MudStack>
+                                </MudAlert>
+                            }
+
+                            @* Response Output *@
+                            <MudPaper Elevation="0" Class="pa-3" Style="background: #f5f5f5;">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                                    <MudText Typo="Typo.body1" Class="font-bold">Response Output</MudText>
+                                    <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                                  Size="Size.Small"
+                                                  OnClick="() => CopyToClipboard(_lastExecutionResult.Output)"
+                                                  title="Copy to clipboard" />
+                                </MudStack>
+                                <SyntaxHighlighter Content="@_lastExecutionResult.Output"
+                                                  Language="@(_selectedIntegration?.DestinationType.ToLower() ?? "json")"
+                                                  ShowCopyButton="false" />
+                            </MudPaper>
+
+                            @if (!string.IsNullOrEmpty(_lastExecutionResult.ErrorMessage))
+                            {
+                                <MudAlert Severity="Severity.Error">
+                                    <MudText Typo="Typo.body2" Class="font-bold mb-2">Error Details</MudText>
+                                    <MudText Typo="Typo.body2">@_lastExecutionResult.ErrorMessage</MudText>
+                                </MudAlert>
+                            }
+
+                            @* Actions *@
+                            <MudStack Row="true" Spacing="2">
+                                <MudButton Variant="Variant.Outlined"
+                                          StartIcon="@Icons.Material.Filled.Refresh"
+                                          OnClick="ExecuteSample">
+                                    Run Again
+                                </MudButton>
+                                <MudButton Variant="Variant.Text"
+                                          StartIcon="@Icons.Material.Filled.Download"
+                                          OnClick="() => DownloadResult(_lastExecutionResult.Output)">
+                                    Download
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _executing = false;
+    private List<IntegrationDto> _integrations = new();
+    private IntegrationDto? _selectedIntegration;
+    private string? _selectedSample;
+    private ExecutionResult? _lastExecutionResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadIntegrationsAsync();
+    }
+
+    private async Task LoadIntegrationsAsync()
+    {
+        try
+        {
+            _loading = true;
+            _integrations = await ApiClient.GetAllIntegrationsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading integrations: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void SelectIntegration(IntegrationDto integration)
+    {
+        _selectedIntegration = integration;
+        _selectedSample = null;
+        _lastExecutionResult = null;
+
+        var samples = GetSampleRequests(integration);
+        if (samples.Any())
+        {
+            _selectedSample = samples.First().Name;
+        }
+    }
+
+    private List<SampleRequest> GetSampleRequests(IntegrationDto integration)
+    {
+        var samples = new List<SampleRequest>();
+
+        if (integration.SourceType.ToUpper() == "JSON")
+        {
+            samples.Add(new SampleRequest
+            {
+                Name = "Sample E-Commerce Order",
+                Description = "A typical order from an e-commerce platform with customer and product details",
+                Payload = @"{
+  ""orderId"": ""ORD-2024-001"",
+  ""orderDate"": ""2024-01-10T10:30:00Z"",
+  ""customer"": {
+    ""id"": ""CUST-12345"",
+    ""name"": ""John Doe"",
+    ""email"": ""john.doe@example.com"",
+    ""phone"": ""+1-555-0123""
+  },
+  ""items"": [
+    {
+      ""sku"": ""PROD-001"",
+      ""name"": ""Widget Pro"",
+      ""quantity"": 2,
+      ""price"": 29.99
+    },
+    {
+      ""sku"": ""PROD-002"",
+      ""name"": ""Gadget Plus"",
+      ""quantity"": 1,
+      ""price"": 49.99
+    }
+  ],
+  ""shipping"": {
+    ""address"": ""123 Main St"",
+    ""city"": ""Springfield"",
+    ""state"": ""IL"",
+    ""zipCode"": ""62701"",
+    ""country"": ""USA""
+  },
+  ""total"": 109.97,
+  ""currency"": ""USD""
+}"
+            });
+
+            samples.Add(new SampleRequest
+            {
+                Name = "Sample User Registration",
+                Description = "New user registration payload",
+                Payload = @"{
+  ""firstName"": ""Jane"",
+  ""lastName"": ""Smith"",
+  ""email"": ""jane.smith@example.com"",
+  ""phone"": ""+1-555-0199"",
+  ""dateOfBirth"": ""1990-05-15"",
+  ""address"": {
+    ""street"": ""456 Oak Avenue"",
+    ""city"": ""Boston"",
+    ""state"": ""MA"",
+    ""zipCode"": ""02101""
+  }
+}"
+            });
+        }
+        else if (integration.SourceType.ToUpper() == "XML" || integration.SourceType.ToUpper() == "SOAP")
+        {
+            samples.Add(new SampleRequest
+            {
+                Name = "Sample SOAP Request",
+                Description = "SOAP envelope with order fulfillment request",
+                Payload = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soap:Envelope xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <FulfillOrder xmlns=""http://warehouse.example.com"">
+      <OrderNumber>ORD-2024-001</OrderNumber>
+      <CustomerName>John Doe</CustomerName>
+      <Items>
+        <Item>
+          <SKU>PROD-001</SKU>
+          <Quantity>2</Quantity>
+        </Item>
+        <Item>
+          <SKU>PROD-002</SKU>
+          <Quantity>1</Quantity>
+        </Item>
+      </Items>
+      <ShippingAddress>
+        <Street>123 Main St</Street>
+        <City>Springfield</City>
+        <State>IL</State>
+        <ZipCode>62701</ZipCode>
+      </ShippingAddress>
+    </FulfillOrder>
+  </soap:Body>
+</soap:Envelope>"
+            });
+        }
+
+        if (!samples.Any())
+        {
+            samples.Add(new SampleRequest
+            {
+                Name = "Generic Sample",
+                Description = "Generic sample payload for testing",
+                Payload = @"{
+  ""test"": ""data"",
+  ""timestamp"": ""2024-01-10T10:30:00Z""
+}"
+            });
+        }
+
+        return samples;
+    }
+
+    private async Task ExecuteSample()
+    {
+        if (_selectedIntegration == null || string.IsNullOrEmpty(_selectedSample))
+        {
+            Snackbar.Add("Please select an integration and sample request", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            _executing = true;
+            var sample = GetSampleRequests(_selectedIntegration).FirstOrDefault(s => s.Name == _selectedSample);
+            if (sample == null) return;
+
+            var startTime = DateTime.UtcNow;
+
+            var testRequest = new TestMappingRequest
+            {
+                SamplePayload = sample.Payload
+            };
+
+            var result = await ApiClient.TestIntegrationAsync(_selectedIntegration.Id, testRequest);
+
+            var endTime = DateTime.UtcNow;
+
+            if (result != null)
+            {
+                // Extract correlation ID from metadata
+                var correlationId = result.Metadata?.TryGetValue("CorrelationId", out var corrId) == true
+                    ? corrId
+                    : Guid.NewGuid().ToString();
+
+                // Extract duration from metadata if available
+                var metadataDuration = result.Metadata?.TryGetValue("Duration", out var durationStr) == true
+                    && double.TryParse(durationStr, out var ms)
+                    ? TimeSpan.FromMilliseconds(ms)
+                    : endTime - startTime;
+
+                _lastExecutionResult = new ExecutionResult
+                {
+                    Success = result.Success,
+                    Output = result.TransformedPayload ?? string.Empty,
+                    ErrorMessage = result.Errors,
+                    Duration = metadataDuration,
+                    StatusCode = result.Success ? 200 : 500,
+                    CorrelationId = correlationId
+                };
+
+                if (result.Success)
+                {
+                    Snackbar.Add($"Request executed successfully - Correlation ID: {correlationId.Substring(0, 8)}...", Severity.Success);
+                }
+                else
+                {
+                    Snackbar.Add("Request execution failed", Severity.Error);
+                }
+            }
+            else
+            {
+                _lastExecutionResult = new ExecutionResult
+                {
+                    Success = false,
+                    ErrorMessage = "No response received from the integration",
+                    Duration = endTime - startTime,
+                    StatusCode = 500
+                };
+                Snackbar.Add("Request execution failed", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _lastExecutionResult = new ExecutionResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message,
+                Duration = TimeSpan.Zero,
+                StatusCode = 500
+            };
+            Snackbar.Add($"Error executing request: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _executing = false;
+        }
+    }
+
+    private async Task CopyToClipboard(string content)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", content);
+            Snackbar.Add("Copied to clipboard", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Failed to copy to clipboard", Severity.Error);
+        }
+    }
+
+    private void DownloadResult(string content)
+    {
+        Snackbar.Add("Download functionality coming soon", Severity.Info);
+    }
+
+    private void ViewCapturedMessages(string correlationId)
+    {
+        Navigation.NavigateTo($"/demo/flow?correlation={correlationId}");
+    }
+
+    private class SampleRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Payload { get; set; } = string.Empty;
+    }
+
+    private class ExecutionResult
+    {
+        public bool Success { get; set; }
+        public string Output { get; set; } = string.Empty;
+        public string? ErrorMessage { get; set; }
+        public TimeSpan Duration { get; set; }
+        public int StatusCode { get; set; }
+        public string? CorrelationId { get; set; }
+    }
+}
+
+<style>
+    .integration-card {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .integration-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>

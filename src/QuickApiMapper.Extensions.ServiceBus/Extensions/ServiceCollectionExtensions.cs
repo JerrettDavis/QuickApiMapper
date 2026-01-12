@@ -1,8 +1,10 @@
+using System.ComponentModel.DataAnnotations;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using QuickApiMapper.Application.Destinations;
 using QuickApiMapper.Extensions.ServiceBus.Destinations;
+using QuickApiMapper.Extensions.ServiceBus.Options;
 using QuickApiMapper.Extensions.ServiceBus.Workers;
 
 namespace QuickApiMapper.Extensions.ServiceBus.Extensions;
@@ -37,6 +39,9 @@ public static class ServiceCollectionExtensions
         };
         configureOptions?.Invoke(options);
 
+        // Validate options
+        ValidateOptions(options);
+
         // Register Service Bus client as singleton
         services.AddSingleton(sp => new ServiceBusClient(connectionString, new ServiceBusClientOptions
         {
@@ -49,7 +54,11 @@ public static class ServiceCollectionExtensions
             }
         }));
 
-        // Register destination handler
+        // Register destination handler with keyed service for modern .NET
+        services.AddKeyedSingleton<IDestinationHandler, ServiceBusDestinationHandler>("ServiceBus");
+        services.AddKeyedSingleton<IDestinationHandler, ServiceBusDestinationHandler>("SERVICEBUS"); // Case variation
+
+        // Also register non-keyed for backward compatibility
         services.AddSingleton<IDestinationHandler, ServiceBusDestinationHandler>();
 
         // Register background workers if queues are specified
@@ -69,56 +78,32 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-}
 
-/// <summary>
-/// Options for configuring Azure Service Bus support in QuickApiMapper.
-/// </summary>
-public class ServiceBusOptions
-{
-    /// <summary>
-    /// Azure Service Bus connection string.
-    /// </summary>
-    public string ConnectionString { get; set; } = string.Empty;
+    private static void ValidateOptions(ServiceBusOptions options)
+    {
+        var context = new ValidationContext(options);
+        var results = new List<ValidationResult>();
 
-    /// <summary>
-    /// Maximum number of retry attempts for failed operations.
-    /// Default is 3.
-    /// </summary>
-    public int MaxRetries { get; set; } = 3;
+        if (!Validator.TryValidateObject(options, context, results, validateAllProperties: true))
+        {
+            var errors = string.Join("; ", results.Select(r => r.ErrorMessage));
+            throw new ArgumentException($"Invalid ServiceBusOptions configuration: {errors}");
+        }
 
-    /// <summary>
-    /// Maximum number of concurrent message processing calls.
-    /// Default is 10.
-    /// </summary>
-    public int MaxConcurrentCalls { get; set; } = 10;
+        // Validate nested queue configurations
+        if (options.InputQueues != null)
+        {
+            foreach (var queueConfig in options.InputQueues)
+            {
+                var queueContext = new ValidationContext(queueConfig);
+                var queueResults = new List<ValidationResult>();
 
-    /// <summary>
-    /// Input queues or topics to listen to.
-    /// Used for creating background workers.
-    /// </summary>
-    public List<ServiceBusQueueConfig>? InputQueues { get; set; }
-
-    /// <summary>
-    /// Whether to automatically complete messages after successful processing.
-    /// Default is false (manual completion).
-    /// </summary>
-    public bool AutoCompleteMessages { get; set; } = false;
-}
-
-/// <summary>
-/// Configuration for a Service Bus queue or topic subscription.
-/// </summary>
-public class ServiceBusQueueConfig
-{
-    /// <summary>
-    /// Queue name or topic name.
-    /// </summary>
-    public string QueueOrTopicName { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Subscription name (only for topics).
-    /// Leave null for queues.
-    /// </summary>
-    public string? SubscriptionName { get; set; }
+                if (!Validator.TryValidateObject(queueConfig, queueContext, queueResults, validateAllProperties: true))
+                {
+                    var queueErrors = string.Join("; ", queueResults.Select(r => r.ErrorMessage));
+                    throw new ArgumentException($"Invalid ServiceBusQueueConfig: {queueErrors}");
+                }
+            }
+        }
+    }
 }

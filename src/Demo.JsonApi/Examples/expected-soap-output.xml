@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <SubmitOrder>
+      <OrderID>ORD-2026-1234</OrderID>
+      <CustomerName>Example Customer</CustomerName>
+      <CustomerEmail>customer@example.com</CustomerEmail>
+      <OrderDate>2026-01-10T21:30:00Z</OrderDate>
+      <TotalAmount>1299.99</TotalAmount>
+      <Currency>USD</Currency>
+      <Items>
+        <Item>
+          <SKU>LAPTOP-MB-PRO</SKU>
+          <ProductName>MacBook Pro 14 inch</ProductName>
+          <Quantity>1</Quantity>
+          <UnitPrice>1299.99</UnitPrice>
+        </Item>
+      </Items>
+      <ShippingAddress>
+        <Street>123 Demo Street</Street>
+        <City>San Francisco</City>
+        <State>CA</State>
+        <PostalCode>94105</PostalCode>
+        <Country>USA</Country>
+      </ShippingAddress>
+      <Priority>EXPRESS</Priority>
+    </SubmitOrder>
+  </soap:Body>
+</soap:Envelope>

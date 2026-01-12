@@ -41,11 +41,15 @@ public class QuickApiMapperDbContext : DbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // Update timestamps before saving
+        // Update timestamps and IDs before saving
         foreach (var entry in ChangeTracker.Entries<IntegrationMappingEntity>())
         {
             if (entry.State == EntityState.Added)
             {
+                if (entry.Entity.Id == Guid.Empty)
+                {
+                    entry.Entity.Id = Guid.NewGuid();
+                }
                 entry.Entity.CreatedAt = DateTime.UtcNow;
                 entry.Entity.UpdatedAt = DateTime.UtcNow;
             }

@@ -130,12 +130,20 @@ public static class ServiceCollectionExtensions
     }
     
     /// <summary>
-    /// Registers all destination handlers.
+    /// Registers all destination handlers using keyed services for modern .NET 8+ DI.
+    /// Handlers are registered with keys matching destination types (JSON, XML, SOAP).
     /// </summary>
     public static IServiceCollection AddQuickApiMapperDestinations(this IServiceCollection services)
     {
+        // Register handlers with keys for direct lookup (eliminates CanHandle pattern)
+        services.AddKeyedSingleton<IDestinationHandler, JsonDestinationHandler>("JSON");
+        services.AddKeyedSingleton<IDestinationHandler, SoapDestinationHandler>("SOAP");
+        services.AddKeyedSingleton<IDestinationHandler, SoapDestinationHandler>("XML"); // SOAP handler handles XML too
+
+        // Also register non-keyed for backward compatibility
         services.AddSingleton<IDestinationHandler, JsonDestinationHandler>();
         services.AddSingleton<IDestinationHandler, SoapDestinationHandler>();
+
         return services;
     }
     

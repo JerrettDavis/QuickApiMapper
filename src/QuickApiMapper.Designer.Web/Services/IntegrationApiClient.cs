@@ -270,4 +270,71 @@ public class IntegrationApiClient
             throw;
         }
     }
+
+    // Demo endpoints
+
+    public async Task<DemoStatusDto?> GetDemoStatusAsync()
+    {
+        try
+        {
+            return await _httpClient.GetFromJsonAsync<DemoStatusDto>("api/admin/demo-status");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching demo status: {Message}", ex.Message);
+            // Return default status if endpoint doesn't exist
+            return new DemoStatusDto { IsEnabled = false };
+        }
+    }
+
+    public async Task<bool> EnableDemoModeAsync()
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync("api/admin/demo/enable", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error enabling demo mode: {Message}", ex.Message);
+            return false;
+        }
+    }
+
+    public async Task<bool> DisableDemoModeAsync()
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync("api/admin/demo/disable", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disabling demo mode: {Message}", ex.Message);
+            return false;
+        }
+    }
+
+    public async Task<bool> ResetDemoDataAsync()
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync("api/admin/demo/reset", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting demo data: {Message}", ex.Message);
+            return false;
+        }
+    }
+}
+
+// Demo DTO
+public class DemoStatusDto
+{
+    public bool IsEnabled { get; set; }
+    public int SampleIntegrationsCount { get; set; }
+    public int SampleMessagesCount { get; set; }
+    public DateTime? LastReset { get; set; }
 }

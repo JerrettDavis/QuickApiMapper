@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using QuickApiMapper.Application.Extensions;
 using QuickApiMapper.Management.Contracts.Models;
+using QuickApiMapper.Management.Api.Data;
 using QuickApiMapper.Management.Api.Services;
 using QuickApiMapper.MessageCapture.InMemory.Extensions;
 using QuickApiMapper.Persistence.Abstractions.Repositories;
@@ -89,6 +90,13 @@ builder.Services.AddInMemoryMessageCapture(options =>
 builder.Services.AddScoped<IIntegrationService, IntegrationService>();
 builder.Services.AddScoped<ISchemaImportService, SchemaImportService>();
 builder.Services.AddScoped<ITestingService, TestingService>();
+
+// Configure demo mode options
+builder.Services.Configure<DemoModeOptions>(
+    builder.Configuration.GetSection(DemoModeOptions.SectionName));
+
+// Register demo data seeder (only runs in Development when enabled)
+builder.Services.AddHostedService<DemoDataSeeder>();
 
 // Add database health check
 if (usePostgres && !string.IsNullOrEmpty(connectionString))

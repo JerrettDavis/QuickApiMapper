@@ -1,8 +1,10 @@
+using System.ComponentModel.DataAnnotations;
 using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using QuickApiMapper.Contracts;
 using QuickApiMapper.Application.Destinations;
 using QuickApiMapper.Extensions.gRPC.Destinations;
+using QuickApiMapper.Extensions.gRPC.Options;
 using QuickApiMapper.Extensions.gRPC.Resolvers;
 using QuickApiMapper.Extensions.gRPC.Writers;
 
@@ -28,7 +30,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISourceResolver<IMessage>, GrpcSourceResolver>();
         services.AddSingleton<IDestinationWriter<IMessage>, GrpcDestinationWriter>();
 
-        // Register gRPC destination handler
+        // Register gRPC destination handler with keyed service for modern .NET
+        services.AddKeyedSingleton<IDestinationHandler, GrpcDestinationHandler>("gRPC");
+        services.AddKeyedSingleton<IDestinationHandler, GrpcDestinationHandler>("GRPC"); // Case variation
+
+        // Also register non-keyed for backward compatibility
         services.AddSingleton<IDestinationHandler, GrpcDestinationHandler>();
 
         // Configure gRPC client factory for downstream calls
@@ -54,6 +60,9 @@ public static class ServiceCollectionExtensions
             var options = new GrpcServiceOptions();
             configureGrpc(options);
 
+            // Validate options
+            ValidateOptions(options);
+
             if (options.EnableReflection)
             {
                 services.AddGrpcReflection();
@@ -62,33 +71,16 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-}
 
-/// <summary>
-/// Options for configuring gRPC support in QuickApiMapper.
-/// </summary>
-public class GrpcServiceOptions
-{
-    /// <summary>
-    /// Enable gRPC server reflection for dynamic service discovery.
-    /// Useful for testing with tools like grpcurl or Postman.
-    /// </summary>
-    public bool EnableReflection { get; set; }
+    private static void ValidateOptions(GrpcServiceOptions options)
+    {
+        var context = new ValidationContext(options);
+        var results = new List<ValidationResult>();
 
-    /// <summary>
-    /// Maximum message size in bytes for gRPC requests/responses.
-    /// Default is 4 MB.
-    /// </summary>
-    public int MaxMessageSize { get; set; } = 4 * 1024 * 1024;
-
-    /// <summary>
-    /// Connection timeout for downstream gRPC services.
-    /// </summary>
-    public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(30);
-
-    /// <summary>
-    /// Enable detailed error messages in gRPC responses.
-    /// Should be disabled in production for security.
-    /// </summary>
-    public bool EnableDetailedErrors { get; set; }
+        if (!Validator.TryValidateObject(options, context, results, validateAllProperties: true))
+        {
+            var errors = string.Join("; ", results.Select(r => r.ErrorMessage));
+            throw new ArgumentException($"Invalid GrpcServiceOptions configuration: {errors}");
+        }
+    }
 }

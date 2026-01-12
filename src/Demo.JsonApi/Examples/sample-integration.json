@@ -1,0 +1,79 @@
+{
+  "name": "DemoOrderToSoap",
+  "endpoint": "/api/demo/order-to-soap",
+  "sourceType": "JSON",
+  "destinationType": "SOAP",
+  "destinationUrl": "https://legacy-soap-service.example.com/OrderService.asmx",
+  "soapAction": "http://example.com/SubmitOrder",
+  "enableInput": true,
+  "enableOutput": true,
+  "mapping": [
+    {
+      "sourcePath": "$.orderId",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/OrderID"
+    },
+    {
+      "sourcePath": "$.customerName",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/CustomerName"
+    },
+    {
+      "sourcePath": "$.customerEmail",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/CustomerEmail"
+    },
+    {
+      "sourcePath": "$.orderDate",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/OrderDate"
+    },
+    {
+      "sourcePath": "$.totalAmount",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/TotalAmount"
+    },
+    {
+      "sourcePath": "$.currency",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/Currency"
+    },
+    {
+      "sourcePath": "$.items[0].sku",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/Items/Item[1]/SKU"
+    },
+    {
+      "sourcePath": "$.items[0].productName",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/Items/Item[1]/ProductName"
+    },
+    {
+      "sourcePath": "$.items[0].quantity",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/Items/Item[1]/Quantity"
+    },
+    {
+      "sourcePath": "$.items[0].unitPrice",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/Items/Item[1]/UnitPrice"
+    },
+    {
+      "sourcePath": "$.shippingAddress.street",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/ShippingAddress/Street"
+    },
+    {
+      "sourcePath": "$.shippingAddress.city",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/ShippingAddress/City"
+    },
+    {
+      "sourcePath": "$.shippingAddress.state",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/ShippingAddress/State"
+    },
+    {
+      "sourcePath": "$.shippingAddress.postalCode",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/ShippingAddress/PostalCode"
+    },
+    {
+      "sourcePath": "$.shippingAddress.country",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/ShippingAddress/Country"
+    },
+    {
+      "sourcePath": "$.priority",
+      "destinationPath": "/soap:Envelope/soap:Body/SubmitOrder/Priority"
+    }
+  ],
+  "staticValues": {
+    "TnsNamespace": "http://schemas.xmlsoap.org/soap/envelope/"
+  }
+}

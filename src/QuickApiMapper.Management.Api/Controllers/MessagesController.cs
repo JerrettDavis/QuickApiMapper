@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using QuickApiMapper.MessageCapture.Abstractions.Interfaces;
 using QuickApiMapper.MessageCapture.Abstractions.Models;
+using QuickApiMapper.Management.Contracts.Models;
 
 namespace QuickApiMapper.Management.Api.Controllers;
 
@@ -38,7 +39,7 @@ public class MessagesController : ControllerBase
     /// <returns>Paged list of captured messages.</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<CapturedMessage>>> Query(
+    public async Task<ActionResult<MessagePagedResult>> Query(
         [FromQuery] Guid? integrationId,
         [FromQuery] MessageDirection? direction,
         [FromQuery] MessageStatus? status,
@@ -68,7 +69,17 @@ public class MessagesController : ControllerBase
         _logger.LogDebug("Querying messages with filter: {Filter}", filter);
 
         var result = await _messageCaptureProvider.QueryAsync(filter, cancellationToken);
-        return Ok(result);
+
+        // Map to DTO
+        var dtoResult = new MessagePagedResult
+        {
+            Items = result.Items.Select(MapToDto).ToList(),
+            TotalCount = result.TotalCount,
+            PageNumber = result.PageNumber,
+            PageSize = result.PageSize
+        };
+
+        return Ok(dtoResult);
     }
 
     /// <summary>
@@ -80,7 +91,7 @@ public class MessagesController : ControllerBase
     [HttpGet("{messageId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CapturedMessage>> GetById(
+    public async Task<ActionResult<CapturedMessageDto>> GetById(
         string messageId,
         CancellationToken cancellationToken)
     {
@@ -92,7 +103,7 @@ public class MessagesController : ControllerBase
             return NotFound(new { Message = $"Message {messageId} not found" });
         }
 
-        return Ok(message);
+        return Ok(MapToDto(message));
     }
 
     /// <summary>
@@ -147,5 +158,27 @@ public class MessagesController : ControllerBase
         _logger.LogInformation("Purged {DeletedCount} messages", deletedCount);
 
         return Ok(new { DeletedCount = deletedCount });
+    }
+
+    /// <summary>
+    /// Maps a CapturedMessage domain model to a CapturedMessageDto.
+    /// </summary>
+    private static CapturedMessageDto MapToDto(CapturedMessage message)
+    {
+        return new CapturedMessageDto
+        {
+            Id = message.Id,
+            IntegrationId = message.IntegrationId,
+            IntegrationName = message.IntegrationName,
+            Direction = message.Direction.ToString(),
+            Payload = message.Payload,
+            IsTruncated = message.IsTruncated,
+            Status = message.Status.ToString(),
+            ErrorMessage = message.ErrorMessage,
+            Duration = message.Duration,
+            CorrelationId = message.CorrelationId,
+            Timestamp = message.Timestamp,
+            Metadata = message.Metadata
+        };
     }
 }

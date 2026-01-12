@@ -241,8 +241,8 @@ async Task HandleJsonDestination(
         return; // Message was captured by MessageCaptureBehavior, but don't forward
     }
 
-    var destinationHandlers = serviceProvider.GetServices<IDestinationHandler>();
-    var handler = destinationHandlers.FirstOrDefault(h => h.CanHandle(integration.DestinationType)) ??
+    // Use keyed service resolution for direct lookup (eliminates CanHandle iteration)
+    var handler = serviceProvider.GetKeyedService<IDestinationHandler>(integration.DestinationType) ??
                   throw new InvalidOperationException($"No handler found for destination type: {integration.DestinationType}");
     await handler.HandleAsync(integration, outputJson, null, request, response, httpClientFactory, cancellationToken);
 }
@@ -264,13 +264,9 @@ async Task HandleXmlDestination(
         return; // Message was captured by MessageCaptureBehavior, but don't forward
     }
 
-    var destinationHandlers = serviceProvider.GetServices<IDestinationHandler>();
-    var handler = destinationHandlers.FirstOrDefault(h => h.CanHandle(integration.DestinationType));
-
-    if (handler == null)
-    {
-        throw new InvalidOperationException($"No handler found for destination type: {integration.DestinationType}");
-    }
+    // Use keyed service resolution for direct lookup (eliminates CanHandle iteration)
+    var handler = serviceProvider.GetKeyedService<IDestinationHandler>(integration.DestinationType) ??
+                  throw new InvalidOperationException($"No handler found for destination type: {integration.DestinationType}");
 
     await handler.HandleAsync(integration, null, outputXml, request, response, httpClientFactory, cancellationToken);
 }

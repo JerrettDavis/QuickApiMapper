@@ -8,7 +8,7 @@ public class IntegrationMappingEntity
     /// <summary>
     /// Unique identifier for the integration mapping.
     /// </summary>
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; }
 
     /// <summary>
     /// Name of the integration (e.g., "CustomerIntegration", "VendorIntegration").
@@ -70,12 +70,12 @@ public class IntegrationMappingEntity
     /// <summary>
     /// Timestamp when this integration was created.
     /// </summary>
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
 
     /// <summary>
     /// Timestamp when this integration was last updated.
     /// </summary>
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; }
 
     /// <summary>
     /// User who created this integration.

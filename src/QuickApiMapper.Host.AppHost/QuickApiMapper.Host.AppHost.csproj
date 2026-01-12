@@ -13,6 +13,8 @@
     <ProjectReference Include="..\QuickApiMapper.Web\QuickApiMapper.Web.csproj" />
     <ProjectReference Include="..\QuickApiMapper.Management.Api\QuickApiMapper.Management.Api.csproj" />
     <ProjectReference Include="..\QuickApiMapper.Designer.Web\QuickApiMapper.Designer.Web.csproj" />
+    <ProjectReference Include="..\Demo.JsonApi\Demo.JsonApi.csproj" />
+    <ProjectReference Include="..\Demo.SoapApi\Demo.SoapApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>

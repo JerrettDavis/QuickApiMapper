@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <SubmitFulfillmentRequest xmlns="http://warehouse.example.com/">
+      <OrderNumber>ORD-2026-001</OrderNumber>
+      <CustomerInfo>
+        <Name>John Smith</Name>
+        <ContactEmail>john.smith@example.com</ContactEmail>
+      </CustomerInfo>
+      <OrderDateTime>2026-01-10T14:30:00</OrderDateTime>
+      <TotalValue>599.99</TotalValue>
+      <CurrencyCode>USD</CurrencyCode>
+      <LineItems>
+        <Item>
+          <SKU>LAPTOP-XPS15</SKU>
+          <Description>Dell XPS 15 Laptop</Description>
+          <Qty>1</Qty>
+          <Price>599.99</Price>
+        </Item>
+      </LineItems>
+      <DeliveryAddress>
+        <AddressLine1>123 Main St</AddressLine1>
+        <City>Seattle</City>
+        <StateProvince>WA</StateProvince>
+        <PostalCode>98101</PostalCode>
+        <CountryCode>USA</CountryCode>
+      </DeliveryAddress>
+      <PriorityCode>STD</PriorityCode>
+    </SubmitFulfillmentRequest>
+  </soap:Body>
+</soap:Envelope>

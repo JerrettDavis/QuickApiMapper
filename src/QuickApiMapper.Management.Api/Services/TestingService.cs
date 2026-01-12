@@ -3,6 +3,8 @@ using Newtonsoft.Json.Linq;
 using QuickApiMapper.Application.Extensions;
 using QuickApiMapper.Contracts;
 using QuickApiMapper.Management.Contracts.Models;
+using QuickApiMapper.MessageCapture.Abstractions.Interfaces;
+using QuickApiMapper.MessageCapture.Abstractions.Models;
 using QuickApiMapper.Persistence.Abstractions.Repositories;
 
 namespace QuickApiMapper.Management.Api.Services;
@@ -14,17 +16,20 @@ public class TestingService : ITestingService
 {
     private readonly IIntegrationMappingRepository _repository;
     private readonly IMappingEngineFactory _mappingEngineFactory;
+    private readonly IMessageCaptureProvider _messageCaptureProvider;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<TestingService> _logger;
 
     public TestingService(
         IIntegrationMappingRepository repository,
         IMappingEngineFactory mappingEngineFactory,
+        IMessageCaptureProvider messageCaptureProvider,
         IServiceProvider serviceProvider,
         ILogger<TestingService> logger)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _mappingEngineFactory = mappingEngineFactory ?? throw new ArgumentNullException(nameof(mappingEngineFactory));
+        _messageCaptureProvider = messageCaptureProvider ?? throw new ArgumentNullException(nameof(messageCaptureProvider));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -34,9 +39,12 @@ public class TestingService : ITestingService
         TestMappingRequest request,
         CancellationToken cancellationToken = default)
     {
+        var startTime = DateTime.UtcNow;
+        var correlationId = Guid.NewGuid().ToString();
+
         try
         {
-            _logger.LogInformation("Testing integration {IntegrationId}", integrationId);
+            _logger.LogInformation("Testing integration {IntegrationId} with correlation {CorrelationId}", integrationId, correlationId);
 
             // Load integration configuration
             var entity = await _repository.GetByIdAsync(integrationId, cancellationToken);
@@ -57,6 +65,24 @@ public class TestingService : ITestingService
                     Errors = "Sample payload is required"
                 };
             }
+
+            // Capture input message
+            await _messageCaptureProvider.CaptureAsync(new CapturedMessage
+            {
+                Id = $"{correlationId}-input",
+                IntegrationId = integrationId,
+                IntegrationName = entity.Name,
+                Direction = MessageDirection.Input,
+                Payload = request.SamplePayload,
+                Status = MessageStatus.Pending,
+                CorrelationId = correlationId,
+                Timestamp = startTime,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "Source", "DemoRunner" },
+                    { "TestMode", "true" }
+                }
+            }, cancellationToken);
 
             // Convert entity to integration mapping for processing
             var integration = ConvertToIntegrationMapping(entity);
@@ -113,7 +139,30 @@ public class TestingService : ITestingService
                 };
             }
 
-            _logger.LogInformation("Successfully tested integration {IntegrationId}", integrationId);
+            var endTime = DateTime.UtcNow;
+            var duration = endTime - startTime;
+
+            // Capture output message
+            await _messageCaptureProvider.CaptureAsync(new CapturedMessage
+            {
+                Id = $"{correlationId}-output",
+                IntegrationId = integrationId,
+                IntegrationName = entity.Name,
+                Direction = MessageDirection.Output,
+                Payload = transformedPayload ?? string.Empty,
+                Status = MessageStatus.Success,
+                CorrelationId = correlationId,
+                Timestamp = endTime,
+                Duration = duration,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "Source", "DemoRunner" },
+                    { "TestMode", "true" },
+                    { "FieldMappingCount", (integration.Mapping?.Count ?? 0).ToString() }
+                }
+            }, cancellationToken);
+
+            _logger.LogInformation("Successfully tested integration {IntegrationId}, correlation {CorrelationId}", integrationId, correlationId);
 
             return new TestMappingResponse
             {
@@ -123,17 +172,45 @@ public class TestingService : ITestingService
                 {
                     { "SourceType", entity.SourceType },
                     { "DestinationType", entity.DestinationType },
-                    { "IntegrationName", entity.Name }
+                    { "IntegrationName", entity.Name },
+                    { "CorrelationId", correlationId },
+                    { "Duration", duration.TotalMilliseconds.ToString("F0") }
                 }
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error testing integration {IntegrationId}", integrationId);
+            _logger.LogError(ex, "Error testing integration {IntegrationId}, correlation {CorrelationId}", integrationId, correlationId);
+
+            // Capture failed output message
+            var endTime = DateTime.UtcNow;
+            await _messageCaptureProvider.CaptureAsync(new CapturedMessage
+            {
+                Id = $"{correlationId}-output",
+                IntegrationId = integrationId,
+                IntegrationName = "Unknown",
+                Direction = MessageDirection.Output,
+                Payload = string.Empty,
+                Status = MessageStatus.Failed,
+                ErrorMessage = ex.Message,
+                CorrelationId = correlationId,
+                Timestamp = endTime,
+                Duration = endTime - startTime,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "Source", "DemoRunner" },
+                    { "TestMode", "true" }
+                }
+            }, cancellationToken);
+
             return new TestMappingResponse
             {
                 Success = false,
-                Errors = $"Error testing integration: {ex.Message}"
+                Errors = $"Error testing integration: {ex.Message}",
+                Metadata = new Dictionary<string, string>
+                {
+                    { "CorrelationId", correlationId }
+                }
             };
         }
     }

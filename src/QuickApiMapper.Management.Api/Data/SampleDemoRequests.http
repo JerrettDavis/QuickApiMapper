@@ -1,0 +1,270 @@
+### QuickApiMapper Demo Data - Sample HTTP Requests
+### Use this file with Visual Studio HTTP Client, VS Code REST Client, or similar tools
+
+@management_api_base = https://localhost:7001
+@web_api_base = http://localhost:5000
+
+### ============================================
+### Management API - Check Demo Integrations
+### ============================================
+
+### Get all integrations (should include 3 demo integrations)
+GET {{management_api_base}}/api/integrations
+Accept: application/json
+
+### Get specific demo integration by name
+GET {{management_api_base}}/api/integrations?name=Demo:%20JSON%20to%20SOAP%20Order%20Processing
+Accept: application/json
+
+### Get integration details by ID (replace with actual ID from previous call)
+GET {{management_api_base}}/api/integrations/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### ============================================
+### Admin Endpoints (Development Only)
+### ============================================
+
+### Trigger database migration
+POST {{management_api_base}}/api/admin/migrate
+Content-Type: application/json
+
+### Manually trigger demo data seeding
+POST {{management_api_base}}/api/admin/seed
+Content-Type: application/json
+
+### ============================================
+### QuickApiMapper Web - Test Demo Integration
+### ============================================
+
+### Test 1: Standard Order (STANDARD priority -> STD)
+POST {{web_api_base}}/api/demo/fulfillment/submit
+Content-Type: application/json
+
+{
+  "orderId": "ORD-2026-001",
+  "customerName": "John Smith",
+  "customerEmail": "JOHN.SMITH@EXAMPLE.COM",
+  "orderDate": "2026-01-10T14:30:00Z",
+  "totalAmount": 599.99,
+  "currency": "USD",
+  "items": [
+    {
+      "sku": "laptop-xps15",
+      "productName": "Dell XPS 15 Laptop",
+      "quantity": 1,
+      "unitPrice": 599.99
+    }
+  ],
+  "shippingAddress": {
+    "street": "123 Main St",
+    "city": "Seattle",
+    "state": "WA",
+    "postalCode": "98101",
+    "country": "USA"
+  },
+  "priority": "STANDARD"
+}
+
+### Test 2: Express Order (EXPRESS priority -> EXP)
+POST {{web_api_base}}/api/demo/fulfillment/submit
+Content-Type: application/json
+
+{
+  "orderId": "ORD-2026-002",
+  "customerName": "Jane Doe",
+  "customerEmail": "Jane.Doe@Example.COM",
+  "orderDate": "2026-01-10T15:00:00Z",
+  "totalAmount": 1299.99,
+  "currency": "USD",
+  "items": [
+    {
+      "sku": "phone-iphone15",
+      "productName": "iPhone 15 Pro",
+      "quantity": 1,
+      "unitPrice": 1299.99
+    }
+  ],
+  "shippingAddress": {
+    "street": "456 Oak Avenue",
+    "city": "Portland",
+    "state": "OR",
+    "postalCode": "97201",
+    "country": "USA"
+  },
+  "priority": "EXPRESS"
+}
+
+### Test 3: Overnight Order (OVERNIGHT priority -> OVN)
+POST {{web_api_base}}/api/demo/fulfillment/submit
+Content-Type: application/json
+
+{
+  "orderId": "ORD-2026-003",
+  "customerName": "Bob Johnson",
+  "customerEmail": "BOB@EXAMPLE.COM",
+  "orderDate": "2026-01-10T16:00:00Z",
+  "totalAmount": 2499.99,
+  "currency": "USD",
+  "items": [
+    {
+      "sku": "workstation-dell",
+      "productName": "Dell Precision Workstation",
+      "quantity": 1,
+      "unitPrice": 2499.99
+    }
+  ],
+  "shippingAddress": {
+    "street": "789 Tech Blvd",
+    "city": "San Francisco",
+    "state": "CA",
+    "postalCode": "94105",
+    "country": "USA"
+  },
+  "priority": "OVERNIGHT"
+}
+
+### Test 4: Multi-item Order
+POST {{web_api_base}}/api/demo/fulfillment/submit
+Content-Type: application/json
+
+{
+  "orderId": "ORD-2026-004",
+  "customerName": "Alice Williams",
+  "customerEmail": "alice.williams@example.com",
+  "orderDate": "2026-01-10T17:00:00Z",
+  "totalAmount": 899.97,
+  "currency": "USD",
+  "items": [
+    {
+      "sku": "mouse-mx3",
+      "productName": "Logitech MX Master 3",
+      "quantity": 2,
+      "unitPrice": 99.99
+    },
+    {
+      "sku": "keyboard-k860",
+      "productName": "Logitech K860 Ergonomic",
+      "quantity": 1,
+      "unitPrice": 129.99
+    },
+    {
+      "sku": "monitor-lg27",
+      "productName": "LG 27-inch 4K Monitor",
+      "quantity": 1,
+      "unitPrice": 469.99
+    }
+  ],
+  "shippingAddress": {
+    "street": "321 Developer Drive",
+    "city": "Austin",
+    "state": "TX",
+    "postalCode": "78701",
+    "country": "USA"
+  },
+  "priority": "STANDARD"
+}
+
+### Test 5: International Order
+POST {{web_api_base}}/api/demo/fulfillment/submit
+Content-Type: application/json
+
+{
+  "orderId": "ORD-2026-005",
+  "customerName": "Carlos Rodriguez",
+  "customerEmail": "CARLOS.RODRIGUEZ@EXAMPLE.MX",
+  "orderDate": "2026-01-10T18:00:00Z",
+  "totalAmount": 799.99,
+  "currency": "USD",
+  "items": [
+    {
+      "sku": "tablet-ipad",
+      "productName": "iPad Air 5th Generation",
+      "quantity": 1,
+      "unitPrice": 799.99
+    }
+  ],
+  "shippingAddress": {
+    "street": "Av. Insurgentes Sur 1234",
+    "city": "Mexico City",
+    "state": "CDMX",
+    "postalCode": "03100",
+    "country": "MEX"
+  },
+  "priority": "EXPRESS"
+}
+
+### ============================================
+### Expected Transformations to Verify
+### ============================================
+
+# After sending requests above, check:
+#
+# 1. Email ToLower transformer:
+#    - JOHN.SMITH@EXAMPLE.COM → john.smith@example.com
+#    - Jane.Doe@Example.COM → jane.doe@example.com
+#    - BOB@EXAMPLE.COM → bob@example.com
+#
+# 2. SKU ToUpper transformer:
+#    - laptop-xps15 → LAPTOP-XPS15
+#    - phone-iphone15 → PHONE-IPHONE15
+#    - workstation-dell → WORKSTATION-DELL
+#
+# 3. Priority MapValue transformer:
+#    - STANDARD → STD
+#    - EXPRESS → EXP
+#    - OVERNIGHT → OVN
+#
+# 4. Array mappings:
+#    - Each item in items[] creates a LineItems/Item element
+#    - Multi-item order creates multiple <Item> nodes
+
+### ============================================
+### Test SOAP to JSON Integration
+### ============================================
+
+### Test SOAP to JSON Status Response
+POST {{web_api_base}}/api/demo/fulfillment/status
+Content-Type: text/xml
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <FulfillmentStatusResponse>
+      <OrderNumber>ORD-2026-001</OrderNumber>
+      <Status>SHIPPED</Status>
+      <TrackingNumber>1Z999AA10123456784</TrackingNumber>
+      <EstimatedDelivery>2026-01-15T00:00:00Z</EstimatedDelivery>
+      <LastUpdated>2026-01-10T16:45:00Z</LastUpdated>
+    </FulfillmentStatusResponse>
+  </soap:Body>
+</soap:Envelope>
+
+### Expected JSON Output:
+# {
+#   "orderId": "ORD-2026-001",
+#   "status": "shipped",
+#   "trackingNumber": "1Z999AA10123456784",
+#   "estimatedDeliveryDate": "2026-01-15T00:00:00Z",
+#   "lastUpdated": "2026-01-10T16:45:00Z"
+# }
+
+### ============================================
+### Health Checks
+### ============================================
+
+### Check Management API health
+GET {{management_api_base}}/health
+
+### Check QuickApiMapper Web health
+GET {{web_api_base}}/health
+
+### ============================================
+### Cleanup / Reset Demo Data
+### ============================================
+
+### Delete a demo integration (replace ID with actual ID from GET call)
+# DELETE {{management_api_base}}/api/integrations/00000000-0000-0000-0000-000000000000
+
+### To force re-seed:
+# 1. Set ForceReseed to true in appsettings.Development.json
+# 2. Restart the Management API
+# 3. Set ForceReseed back to false

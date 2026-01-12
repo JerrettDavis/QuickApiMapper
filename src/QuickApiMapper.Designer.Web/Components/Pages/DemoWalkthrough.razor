@@ -1,0 +1,283 @@
+@page "/demo"
+@using QuickApiMapper.Designer.Web.Services
+@inject IntegrationApiClient ApiClient
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Demo Walkthrough - QuickApiMapper Designer</PageTitle>
+
+<div class="fade-in">
+    @* Demo Mode Indicator *@
+    <DemoModeIndicator IsDemoMode="@_isDemoMode" ShowActions="false" />
+
+    @* Header Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h3" Class="font-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.Science" Class="mr-2" />
+                Demo Walkthrough
+            </MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Explore QuickApiMapper's capabilities with pre-configured demo integrations
+            </MudText>
+        </div>
+    </MudStack>
+
+    @* Demo Scenario Overview *@
+    <MudPaper Elevation="2" Class="pa-6 mb-4">
+        <MudText Typo="Typo.h5" Class="font-bold mb-4">Demo Scenario: E-Commerce to Warehouse Integration</MudText>
+        <MudText Typo="Typo.body1" Class="mb-4">
+            This demo showcases a real-world integration scenario where an e-commerce platform communicates with
+            a warehouse management system using different data formats and protocols.
+        </MudText>
+
+        @* Architecture Diagram *@
+        <MudPaper Elevation="0" Class="pa-4 mb-4" Style="background: #f5f5f5;">
+            <MudText Typo="Typo.h6" Class="font-bold mb-3">Integration Architecture</MudText>
+            <div class="demo-architecture">
+                <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                    @* E-Commerce System *@
+                    <MudPaper Elevation="1" Class="pa-4 demo-arch-box" Style="width: 100%; max-width: 500px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Large" />
+                            <div>
+                                <MudText Typo="Typo.h6" Class="font-bold">E-Commerce Platform</MudText>
+                                <MudText Typo="Typo.body2">RESTful JSON API</MudText>
+                            </div>
+                        </MudStack>
+                    </MudPaper>
+
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Color="Color.Primary" Size="Size.Large" />
+
+                    @* QuickApiMapper *@
+                    <MudPaper Elevation="2" Class="pa-4 demo-arch-box" Style="width: 100%; max-width: 500px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Transform" Size="Size.Large" />
+                            <div>
+                                <MudText Typo="Typo.h6" Class="font-bold">QuickApiMapper</MudText>
+                                <MudText Typo="Typo.body2">Data Transformation Layer</MudText>
+                            </div>
+                        </MudStack>
+                    </MudPaper>
+
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Color="Color.Primary" Size="Size.Large" />
+
+                    @* Warehouse System *@
+                    <MudPaper Elevation="1" Class="pa-4 demo-arch-box" Style="width: 100%; max-width: 500px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Large" />
+                            <div>
+                                <MudText Typo="Typo.h6" Class="font-bold">Warehouse Management</MudText>
+                                <MudText Typo="Typo.body2">SOAP XML Service</MudText>
+                            </div>
+                        </MudStack>
+                    </MudPaper>
+                </MudStack>
+            </div>
+        </MudPaper>
+
+        @* Key Features *@
+        <MudText Typo="Typo.h6" Class="font-bold mb-3">What This Demo Demonstrates</MudText>
+        <MudGrid Spacing="2">
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Elevation="1" Class="pa-3">
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Start">
+                        <MudIcon Icon="@Icons.Material.Filled.CompareArrows" Color="Color.Primary" />
+                        <div>
+                            <MudText Typo="Typo.body1" Class="font-bold">Protocol Translation</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">JSON to SOAP conversion</MudText>
+                        </div>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Elevation="1" Class="pa-3">
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Start">
+                        <MudIcon Icon="@Icons.Material.Filled.Transform" Color="Color.Success" />
+                        <div>
+                            <MudText Typo="Typo.body1" Class="font-bold">Data Transformation</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Field mapping and formatting</MudText>
+                        </div>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Elevation="1" Class="pa-3">
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Start">
+                        <MudIcon Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" />
+                        <div>
+                            <MudText Typo="Typo.body1" Class="font-bold">Message Capture</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Real-time monitoring</MudText>
+                        </div>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @* Getting Started Steps *@
+    <MudPaper Elevation="2" Class="pa-6 mb-4">
+        <MudText Typo="Typo.h5" Class="font-bold mb-4">Getting Started</MudText>
+        <MudTimeline TimelineOrientation="TimelineOrientation.Vertical" TimelinePosition="TimelinePosition.Start">
+            <MudTimelineItem Color="Color.Primary" Elevation="2">
+                <MudPaper Elevation="0" Class="pa-3">
+                    <MudText Typo="Typo.h6" Class="font-bold mb-2">Step 1: View Demo Integrations</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        Explore the pre-configured demo integrations that showcase different transformation scenarios.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              StartIcon="@Icons.Material.Filled.IntegrationInstructions"
+                              OnClick='() => Navigation.NavigateTo("/integrations")'>
+                        View Integrations
+                    </MudButton>
+                </MudPaper>
+            </MudTimelineItem>
+
+            <MudTimelineItem Color="Color.Success" Elevation="2">
+                <MudPaper Elevation="0" Class="pa-3">
+                    <MudText Typo="Typo.h6" Class="font-bold mb-2">Step 2: Run Demo Scenarios</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        Execute sample requests and see how QuickApiMapper transforms data in real-time.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Success"
+                              StartIcon="@Icons.Material.Filled.PlayArrow"
+                              OnClick='() => Navigation.NavigateTo("/demo/runner")'>
+                        Demo Runner
+                    </MudButton>
+                </MudPaper>
+            </MudTimelineItem>
+
+            <MudTimelineItem Color="Color.Info" Elevation="2">
+                <MudPaper Elevation="0" Class="pa-3">
+                    <MudText Typo="Typo.h6" Class="font-bold mb-2">Step 3: Monitor Message Flow</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        Visualize how messages flow through the integration pipeline with transformation details.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Info"
+                              StartIcon="@Icons.Material.Filled.Timeline"
+                              OnClick='() => Navigation.NavigateTo("/demo/flow")'>
+                        Message Flow
+                    </MudButton>
+                </MudPaper>
+            </MudTimelineItem>
+
+            <MudTimelineItem Color="Color.Warning" Elevation="2">
+                <MudPaper Elevation="0" Class="pa-3">
+                    <MudText Typo="Typo.h6" Class="font-bold mb-2">Step 4: View Analytics</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-3">
+                        Check integration performance metrics, success rates, and processing statistics.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Warning"
+                              StartIcon="@Icons.Material.Filled.BarChart"
+                              OnClick='() => Navigation.NavigateTo("/demo/statistics")'>
+                        View Statistics
+                    </MudButton>
+                </MudPaper>
+            </MudTimelineItem>
+        </MudTimeline>
+    </MudPaper>
+
+    @* Quick Actions *@
+    <MudPaper Elevation="2" Class="pa-6">
+        <MudText Typo="Typo.h5" Class="font-bold mb-4">Quick Actions</MudText>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="0"
+                         Class="pa-4 border-2 demo-action-card"
+                         Style="border-color: var(--mud-palette-primary); cursor: pointer;"
+                         @onclick='() => Navigation.NavigateTo("/integrations")'>
+                    <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.IntegrationInstructions" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.body1" Class="font-bold" Align="Align.Center">View Integrations</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Primary">@_integrationCount integrations</MudChip>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="0"
+                         Class="pa-4 border-2 demo-action-card"
+                         Style="border-color: var(--mud-palette-success); cursor: pointer;"
+                         @onclick='() => Navigation.NavigateTo("/demo/runner")'>
+                    <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Success" Size="Size.Large" />
+                        <MudText Typo="Typo.body1" Class="font-bold" Align="Align.Center">Run Demo</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success">Interactive</MudChip>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="0"
+                         Class="pa-4 border-2 demo-action-card"
+                         Style="border-color: var(--mud-palette-info); cursor: pointer;"
+                         @onclick='() => Navigation.NavigateTo("/demo/flow")'>
+                    <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.Timeline" Color="Color.Info" Size="Size.Large" />
+                        <MudText Typo="Typo.body1" Class="font-bold" Align="Align.Center">Message Flow</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info">Real-time</MudChip>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="0"
+                         Class="pa-4 border-2 demo-action-card"
+                         Style="border-color: var(--mud-palette-warning); cursor: pointer;"
+                         @onclick='() => Navigation.NavigateTo("/demo/statistics")'>
+                    <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.BarChart" Color="Color.Warning" Size="Size.Large" />
+                        <MudText Typo="Typo.body1" Class="font-bold" Align="Align.Center">Statistics</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">Analytics</MudChip>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</div>
+
+@code {
+    private bool _isDemoMode = true;
+    private int _integrationCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDemoStatus();
+    }
+
+    private async Task LoadDemoStatus()
+    {
+        try
+        {
+            var integrations = await ApiClient.GetAllIntegrationsAsync();
+            _integrationCount = integrations?.Count ?? 0;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading demo status: {ex.Message}", Severity.Warning);
+        }
+    }
+}
+
+<style>
+    .demo-arch-box {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .demo-arch-box:hover {
+        transform: scale(1.02);
+    }
+
+    .demo-action-card {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .demo-action-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+</style>

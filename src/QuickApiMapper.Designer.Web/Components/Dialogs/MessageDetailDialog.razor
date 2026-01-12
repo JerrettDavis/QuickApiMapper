@@ -1,0 +1,128 @@
+@using QuickApiMapper.Management.Contracts.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            @* Message Info *@
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudPaper Elevation="1" Class="pa-2">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Correlation ID</MudText>
+                            <MudText Typo="Typo.body2" Style="font-family: monospace; font-size: 0.75rem;">@Message.CorrelationId</MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudPaper Elevation="1" Class="pa-2">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Timestamp</MudText>
+                            <MudText Typo="Typo.body2">@Message.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudPaper Elevation="1" Class="pa-2">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Direction</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@GetDirectionColor(Message.Direction)">
+                                @Message.Direction
+                            </MudChip>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudPaper Elevation="1" Class="pa-2">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(Message.Status)">
+                                @Message.Status
+                            </MudChip>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                @if (Message.Duration.HasValue)
+                {
+                    <MudItem xs="6">
+                        <MudPaper Elevation="1" Class="pa-2">
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Duration</MudText>
+                                <MudText Typo="Typo.body2">@Message.Duration.Value.TotalMilliseconds.ToString("F0")ms</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+                }
+                @if (!string.IsNullOrEmpty(Message.ErrorMessage))
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Error">
+                            <MudText Typo="Typo.body2" Class="font-bold mb-1">Error Message</MudText>
+                            <MudText Typo="Typo.body2">@Message.ErrorMessage</MudText>
+                        </MudAlert>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudDivider />
+
+            @* Payload *@
+            <MudText Typo="Typo.h6" Class="font-bold">Message Payload</MudText>
+            <SyntaxHighlighter Content="@Message.Payload" Language="@DetectLanguage(Message.Payload)" />
+
+            @if (Message.IsTruncated)
+            {
+                <MudAlert Severity="Severity.Warning">
+                    This message payload has been truncated for display purposes.
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public CapturedMessageDto Message { get; set; } = null!;
+
+    private void Close() => MudDialog.Close();
+
+    private Color GetDirectionColor(string direction)
+    {
+        return direction switch
+        {
+            "Input" => Color.Primary,
+            "Output" => Color.Secondary,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Success" => Color.Success,
+            "Failed" => Color.Error,
+            "Pending" => Color.Warning,
+            _ => Color.Default
+        };
+    }
+
+    private string DetectLanguage(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return "json";
+
+        var trimmed = content.TrimStart();
+        if (trimmed.StartsWith("{") || trimmed.StartsWith("["))
+            return "json";
+        if (trimmed.StartsWith("<"))
+            return "xml";
+
+        return "json";
+    }
+}
