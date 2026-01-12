@@ -140,12 +140,12 @@
                         </MudPaper>
                     </MudItem>
                     <MudItem xs="12" sm="6" md="4">
-                        <MudPaper Elevation="0" Class="pa-4 border-2" Style="border-color: var(--mud-palette-info); cursor: pointer;" @onclick='() => Navigation.NavigateTo("/monitoring")'>
+                        <MudPaper Elevation="0" Class="pa-4 border-2" Style="border-color: var(--mud-palette-info); cursor: pointer;" @onclick='() => Navigation.NavigateTo("/statistics")'>
                             <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="@Icons.Material.Filled.Speed" Color="Color.Info" Size="Size.Large" />
-                                <MudText Typo="Typo.body1" Class="font-semibold">Monitoring</MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.BarChart" Color="Color.Info" Size="Size.Large" />
+                                <MudText Typo="Typo.body1" Class="font-semibold">Statistics</MudText>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
-                                    View system health
+                                    View performance metrics
                                 </MudText>
                             </MudStack>
                         </MudPaper>

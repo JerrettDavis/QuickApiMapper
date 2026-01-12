@@ -9,6 +9,13 @@
         Dashboard
     </MudNavLink>
 
+    <MudNavLink Href="/statistics"
+               Match="NavLinkMatch.Prefix"
+               Icon="@Icons.Material.Filled.BarChart"
+               IconColor="Color.Info">
+        Statistics
+    </MudNavLink>
+
     @* Integration Management *@
     <MudText Typo="Typo.overline" Class="px-3 mt-4 mb-1" Color="Color.Secondary">Management</MudText>
 
@@ -44,6 +51,40 @@
         Behaviors
     </MudNavLink>
 
+    @* Demo Section *@
+    @if (_showDemoSection)
+    {
+        <MudText Typo="Typo.overline" Class="px-3 mt-4 mb-1" Color="Color.Secondary">Demo</MudText>
+
+        <MudNavLink Href="/demo"
+                   Match="NavLinkMatch.All"
+                   Icon="@Icons.Material.Filled.Science"
+                   IconColor="Color.Info">
+            Demo Walkthrough
+        </MudNavLink>
+
+        <MudNavLink Href="/demo/runner"
+                   Match="NavLinkMatch.Prefix"
+                   Icon="@Icons.Material.Filled.PlayArrow"
+                   IconColor="Color.Success">
+            Demo Runner
+        </MudNavLink>
+
+        <MudNavLink Href="/demo/flow"
+                   Match="NavLinkMatch.Prefix"
+                   Icon="@Icons.Material.Filled.Timeline"
+                   IconColor="Color.Primary">
+            Message Flow
+        </MudNavLink>
+
+        <MudNavLink Href="/demo/statistics"
+                   Match="NavLinkMatch.Prefix"
+                   Icon="@Icons.Material.Filled.BarChart"
+                   IconColor="Color.Warning">
+            Statistics
+        </MudNavLink>
+    }
+
     @* System *@
     <MudText Typo="Typo.overline" Class="px-3 mt-4 mb-1" Color="Color.Secondary">System</MudText>
 
@@ -56,10 +97,13 @@
 </MudNavMenu>
 
 @using QuickApiMapper.Designer.Web.Services
+@using Microsoft.Extensions.Configuration
 @inject IntegrationApiClient ApiClient
+@inject IConfiguration Configuration
 
 @code {
     private int _integrationCount = 0;
+    private bool _showDemoSection = true; // Default to true, can be controlled via config
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,6 +111,9 @@
         {
             var integrations = await ApiClient.GetAllIntegrationsAsync();
             _integrationCount = integrations?.Count(i => i.IsActive) ?? 0;
+
+            // Check if demo mode should be shown (from config or based on integrations)
+            _showDemoSection = Configuration.GetValue<bool>("Demo:ShowUI", true);
         }
         catch
         {
