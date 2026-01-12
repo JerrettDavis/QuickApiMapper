@@ -66,6 +66,33 @@ public class RabbitMqIntegrationTests
         }
     }
 
+    [TearDown]
+    public void TearDown()
+    {
+        // Clean up queues after each test to prevent conflicts
+        if (_connectionFactory != null)
+        {
+            try
+            {
+                using var connection = _connectionFactory.CreateConnection();
+                using var channel = connection.CreateModel();
+
+                // Delete test queues
+                try { channel.QueueDelete("test-queue-json"); } catch { }
+                try { channel.QueueDelete("test-queue-xml"); } catch { }
+                try { channel.QueueDelete("test-exchange-queue"); } catch { }
+                try { channel.QueueDelete("test-consumer-queue"); } catch { }
+                try { channel.QueueDelete("test-consumer-queue.dead-letter"); } catch { }
+                try { channel.ExchangeDelete("test-consumer-queue.dlx"); } catch { }
+                try { channel.ExchangeDelete("test-exchange"); } catch { }
+            }
+            catch
+            {
+                // Ignore cleanup errors
+            }
+        }
+    }
+
     private static IntegrationMapping CreateIntegrationMapping(
         string name,
         string destinationUrl,
@@ -285,12 +312,14 @@ public class RabbitMqIntegrationTests
         var receivedMessages = new List<string>();
         using var messageReceivedEvent = new ManualResetEventSlim(false);
 
-        // Publish test message first
+        // Act - Start consumer (it will declare the queue with dead-letter exchange)
+        var logger = _serviceProvider!.GetRequiredService<ILogger<RabbitMqConsumer>>();
+        using var consumer = new RabbitMqConsumer(logger, _serviceProvider!, _connectionFactory!, queueName);
+
+        // Publish test message to the queue created by consumer
         using (var connection = _connectionFactory!.CreateConnection())
         using (var channel = connection.CreateModel())
         {
-            channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false);
-
             var body = Encoding.UTF8.GetBytes(@"{""testId"": 999}");
             var properties = channel.CreateBasicProperties();
             properties.Persistent = true;
@@ -298,10 +327,6 @@ public class RabbitMqIntegrationTests
 
             channel.BasicPublish(string.Empty, queueName, properties, body);
         }
-
-        // Act - Start consumer
-        var logger = _serviceProvider!.GetRequiredService<ILogger<RabbitMqConsumer>>();
-        using var consumer = new RabbitMqConsumer(logger, _connectionFactory!, queueName);
 
         // Subscribe to message events (simplified - in production would use the worker's internal processing)
         using var testConnection = _connectionFactory!.CreateConnection();
