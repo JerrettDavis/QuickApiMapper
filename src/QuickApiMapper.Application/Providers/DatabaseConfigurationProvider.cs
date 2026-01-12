@@ -9,8 +9,9 @@ namespace QuickApiMapper.Application.Providers;
 /// Configuration provider that reads from a database via repositories.
 /// Demonstrates extensibility - same interface, completely different data source.
 /// Future providers could use Kafka, event stores, HTTP APIs, etc.
+/// Uses source-generated logging for high performance.
 /// </summary>
-public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
+public partial class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
 {
     private readonly IIntegrationMappingRepository _repository;
     private readonly ILogger<DatabaseConfigurationProvider> _logger;
@@ -28,7 +29,7 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
         var entities = await _repository.GetAllActiveAsync(cancellationToken);
         var integrations = entities.Select(MapEntityToContract).ToList();
 
-        _logger.LogInformation("Loaded {Count} active integrations from database", integrations.Count);
+        LogIntegrationsLoaded(integrations.Count);
 
         return integrations;
     }
@@ -37,7 +38,7 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
     {
         if (!Guid.TryParse(id, out var guid))
         {
-            _logger.LogWarning("Invalid GUID format for integration ID: {Id}", id);
+            LogInvalidGuidFormat(id);
             return null;
         }
 
@@ -45,11 +46,11 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
 
         if (entity != null)
         {
-            _logger.LogDebug("Found integration with ID '{Id}' in database", id);
+            LogIntegrationFoundById(id);
             return MapEntityToContract(entity);
         }
 
-        _logger.LogWarning("Integration with ID '{Id}' not found in database", id);
+        LogIntegrationNotFoundById(id);
         return null;
     }
 
@@ -59,11 +60,11 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
 
         if (entity != null)
         {
-            _logger.LogDebug("Found integration '{Name}' in database", name);
+            LogIntegrationFoundByName(name);
             return MapEntityToContract(entity);
         }
 
-        _logger.LogWarning("Integration '{Name}' not found in database", name);
+        LogIntegrationNotFoundByName(name);
         return null;
     }
 
@@ -73,11 +74,11 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
 
         if (entity != null)
         {
-            _logger.LogDebug("Found integration with endpoint '{Endpoint}' in database", endpoint);
+            LogIntegrationFoundByEndpoint(endpoint);
             return MapEntityToContract(entity);
         }
 
-        _logger.LogWarning("Integration with endpoint '{Endpoint}' not found in database", endpoint);
+        LogIntegrationNotFoundByEndpoint(endpoint);
         return null;
     }
 
@@ -86,7 +87,7 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
         var entities = await _repository.GetGlobalStaticValuesAsync(cancellationToken);
         var dictionary = entities.ToDictionary(e => e.Key, e => e.Value);
 
-        _logger.LogDebug("Loaded {Count} global static values from database", dictionary.Count);
+        LogGlobalStaticValuesLoaded(dictionary.Count);
 
         return dictionary;
     }
@@ -95,7 +96,7 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
     {
         // For database provider, namespaces could be stored in a separate table
         // For now, return empty dictionary (can be extended later)
-        _logger.LogDebug("Namespaces not yet implemented in database provider, returning empty dictionary");
+        LogNamespacesNotImplemented();
         return Task.FromResult<IReadOnlyDictionary<string, string>>(new Dictionary<string, string>());
     }
 
@@ -105,33 +106,30 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
     /// </summary>
     private IntegrationMapping MapEntityToContract(IntegrationMappingEntity entity)
     {
-        // Map field mappings
-        var fieldMappings = entity.FieldMappings
-            .OrderBy(fm => fm.Order)
+        // Map field mappings (already ordered at database level)
+        var fieldMappings = entity.FieldMappings?
             .Select(fm => new FieldMapping(
                 fm.Source,
                 fm.Destination,
-                fm.Transformers
-                    .OrderBy(t => t.Order)
+                fm.Transformers?
                     .Select(t => new Transformer(
                         t.Name,
                         ParseTransformerArguments(t.Arguments)))
-                    .ToList()
+                    .ToList() ?? []
             ))
-            .ToList();
+            .ToList() ?? [];
 
         // Map static values specific to this integration
-        var staticValues = entity.StaticValues
+        var staticValues = entity.StaticValues?
             .Where(sv => !sv.IsGlobal)
-            .ToDictionary(sv => sv.Key, sv => sv.Value);
+            .ToDictionary(sv => sv.Key, sv => sv.Value) ?? new Dictionary<string, string>();
 
-        // Map SOAP configuration if present
+        // Map SOAP configuration if present (already ordered at database level)
         SoapConfig? soapConfig = null;
         if (entity.SoapConfig != null)
         {
-            var headerFields = entity.SoapConfig.Fields
+            var headerFields = entity.SoapConfig.Fields?
                 .Where(f => f.FieldType == "Header")
-                .OrderBy(f => f.Order)
                 .Select(f => new SoapFieldConfig(
                     f.XPath,
                     f.Source ?? string.Empty,
@@ -140,11 +138,10 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
                     f.Prefix,
                     f.Attributes != null ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(f.Attributes) : null
                 ))
-                .ToList();
+                .ToList() ?? [];
 
-            var bodyFields = entity.SoapConfig.Fields
+            var bodyFields = entity.SoapConfig.Fields?
                 .Where(f => f.FieldType == "Body")
-                .OrderBy(f => f.Order)
                 .Select(f => new SoapFieldConfig(
                     f.XPath,
                     f.Source ?? string.Empty,
@@ -153,7 +150,7 @@ public class DatabaseConfigurationProvider : IIntegrationConfigurationProvider
                     f.Prefix,
                     f.Attributes != null ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(f.Attributes) : null
                 ))
-                .ToList();
+                .ToList() ?? [];
 
             soapConfig = new SoapConfig(
                 headerFields.Count > 0 ? headerFields : null,
