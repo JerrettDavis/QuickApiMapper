@@ -39,26 +39,26 @@ public interface IIntegrationMappingRepository
     Task<IntegrationMappingEntity?> GetByEndpointAsync(string endpoint, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Adds a new integration mapping to the database.
+    /// Adds a new integration mapping to the context for tracking.
+    /// Call UnitOfWork.SaveChangesAsync to persist changes.
     /// </summary>
     /// <param name="entity">The integration mapping to add.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The added integration mapping with generated ID.</returns>
-    Task<IntegrationMappingEntity> AddAsync(IntegrationMappingEntity entity, CancellationToken cancellationToken = default);
+    /// <returns>The added integration mapping.</returns>
+    IntegrationMappingEntity Add(IntegrationMappingEntity entity);
 
     /// <summary>
-    /// Updates an existing integration mapping.
+    /// Updates an existing integration mapping in the context.
+    /// Call UnitOfWork.SaveChangesAsync to persist changes.
     /// </summary>
     /// <param name="entity">The integration mapping to update.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    Task UpdateAsync(IntegrationMappingEntity entity, CancellationToken cancellationToken = default);
+    void Update(IntegrationMappingEntity entity);
 
     /// <summary>
-    /// Deletes an integration mapping by ID.
+    /// Deletes an integration mapping by ID from the context.
+    /// Call UnitOfWork.SaveChangesAsync to persist changes.
     /// </summary>
     /// <param name="id">The integration mapping ID to delete.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    void Delete(Guid id);
 
     /// <summary>
     /// Gets all global static values (not specific to any integration).
