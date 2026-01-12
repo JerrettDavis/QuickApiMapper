@@ -35,6 +35,7 @@ class Program
         {
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
             try
             {
@@ -77,12 +78,14 @@ class Program
                     if (existing != null)
                     {
                         entity.Id = existing.Id;
-                        await repository.UpdateAsync(entity);
+                        repository.Update(entity);
+                        await unitOfWork.SaveChangesAsync();
                         logger.LogInformation("Updated integration: {Name}", integration.Name);
                     }
                     else
                     {
-                        await repository.AddAsync(entity);
+                        repository.Add(entity);
+                        await unitOfWork.SaveChangesAsync();
                         logger.LogInformation("Created integration: {Name}", integration.Name);
                     }
                 }

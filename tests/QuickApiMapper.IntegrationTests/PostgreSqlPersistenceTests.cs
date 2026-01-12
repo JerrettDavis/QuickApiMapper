@@ -66,6 +66,7 @@ public class PostgreSqlPersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -103,7 +104,8 @@ public class PostgreSqlPersistenceTests
         };
 
         // Act
-        var result = await repository.AddAsync(entity);
+        var result = repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
 
         // Assert
         result.Should().NotBeNull();
@@ -120,6 +122,7 @@ public class PostgreSqlPersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -130,7 +133,8 @@ public class PostgreSqlPersistenceTests
             DestinationUrl = "https://example.com/json"
         };
 
-        await repository.AddAsync(entity);
+        repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
 
         // Act
         var result = await repository.GetByNameAsync("EagerLoadTest");
@@ -148,6 +152,7 @@ public class PostgreSqlPersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -159,12 +164,14 @@ public class PostgreSqlPersistenceTests
             Version = 1
         };
 
-        var created = await repository.AddAsync(entity);
+        var created = repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
         var originalVersion = created.Version;
 
         // Act
         created.DestinationUrl = "https://newurl.com/xml";
-        await repository.UpdateAsync(created);
+        repository.Update(created);
+        await unitOfWork.SaveChangesAsync();
 
         var updated = await repository.GetByNameAsync("UpdateTest");
 
@@ -180,6 +187,7 @@ public class PostgreSqlPersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -199,10 +207,12 @@ public class PostgreSqlPersistenceTests
             ]
         };
 
-        var created = await repository.AddAsync(entity);
+        var created = repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
 
         // Act
-        await repository.DeleteAsync(created.Id);
+        repository.Delete(created.Id);
+        await unitOfWork.SaveChangesAsync();
 
         var result = await repository.GetByIdAsync(created.Id);
 
@@ -216,6 +226,7 @@ public class PostgreSqlPersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var activeEntity = new IntegrationMappingEntity
         {
@@ -237,8 +248,9 @@ public class PostgreSqlPersistenceTests
             IsActive = false
         };
 
-        await repository.AddAsync(activeEntity);
-        await repository.AddAsync(inactiveEntity);
+        repository.Add(activeEntity);
+        repository.Add(inactiveEntity);
+        await unitOfWork.SaveChangesAsync();
 
         // Act
         var results = await repository.GetAllActiveAsync();
@@ -256,6 +268,7 @@ public class PostgreSqlPersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -281,7 +294,8 @@ public class PostgreSqlPersistenceTests
             ]
         };
 
-        await repository.AddAsync(entity);
+        repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
 
         // Act
         var results = await repository.GetGlobalStaticValuesAsync();
@@ -299,6 +313,7 @@ public class PostgreSqlPersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -331,7 +346,8 @@ public class PostgreSqlPersistenceTests
         };
 
         // Act
-        var result = await repository.AddAsync(entity);
+        var result = repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
         var retrieved = await repository.GetByNameAsync("SoapTest");
 
         // Assert

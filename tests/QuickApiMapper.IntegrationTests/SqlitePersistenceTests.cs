@@ -82,6 +82,7 @@ public class SqlitePersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -93,7 +94,8 @@ public class SqlitePersistenceTests
         };
 
         // Act
-        var result = await repository.AddAsync(entity);
+        var result = repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
 
         // Assert
         result.Should().NotBeNull();
@@ -107,6 +109,7 @@ public class SqlitePersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -117,7 +120,8 @@ public class SqlitePersistenceTests
             DestinationUrl = "https://example.com/json"
         };
 
-        var created = await repository.AddAsync(entity);
+        var created = repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
 
         // Act
         var result = await repository.GetByIdAsync(created.Id);
@@ -134,6 +138,7 @@ public class SqlitePersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -151,7 +156,8 @@ public class SqlitePersistenceTests
         };
 
         // Act
-        await repository.AddAsync(entity);
+        repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
         var result = await repository.GetByNameAsync("FieldMappingOrderTest");
 
         // Assert
@@ -169,6 +175,7 @@ public class SqlitePersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var entity = new IntegrationMappingEntity
         {
@@ -195,7 +202,8 @@ public class SqlitePersistenceTests
         };
 
         // Act
-        await repository.AddAsync(entity);
+        repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
         var result = await repository.GetByNameAsync("TransformerOrderTest");
 
         // Assert
@@ -214,6 +222,7 @@ public class SqlitePersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var argumentsJson = "{\"key1\":\"value1\",\"key2\":\"value2\"}";
 
@@ -245,7 +254,8 @@ public class SqlitePersistenceTests
         };
 
         // Act
-        await repository.AddAsync(entity);
+        repository.Add(entity);
+        await unitOfWork.SaveChangesAsync();
         var result = await repository.GetByNameAsync("JsonSerializationTest");
 
         // Assert
@@ -259,6 +269,7 @@ public class SqlitePersistenceTests
         // Arrange
         using var scope = _serviceProvider!.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IIntegrationMappingRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         // Act - Create multiple integrations concurrently
         var tasks = Enumerable.Range(0, 10).Select(async i =>
@@ -271,7 +282,9 @@ public class SqlitePersistenceTests
                 DestinationType = "JSON",
                 DestinationUrl = $"https://example.com/test{i}"
             };
-            return await repository.AddAsync(entity);
+            var result = repository.Add(entity);
+            await unitOfWork.SaveChangesAsync();
+            return result;
         });
 
         var results = await Task.WhenAll(tasks);

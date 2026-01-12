@@ -1,0 +1,141 @@
+@* Syntax highlighter for JSON/XML/SOAP content *@
+
+<MudPaper Elevation="0" Class="syntax-highlighter pa-4" Style="background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.875rem; overflow-x: auto; position: relative;">
+    @if (ShowCopyButton)
+    {
+        <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                      Color="Color.Surface"
+                      Size="Size.Small"
+                      OnClick="CopyToClipboard"
+                      Style="position: absolute; top: 8px; right: 8px; z-index: 1;"
+                      title="Copy to clipboard" />
+    }
+    <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;"><code>@((MarkupString)HighlightedContent)</code></pre>
+</MudPaper>
+
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+
+@code {
+    [Parameter]
+    public string Content { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Language { get; set; } = "json"; // json, xml, soap
+
+    [Parameter]
+    public bool ShowCopyButton { get; set; } = true;
+
+    private string HighlightedContent => HighlightSyntax(Content, Language);
+
+    private string HighlightSyntax(string content, string language)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return string.Empty;
+
+        try
+        {
+            // Format JSON/XML
+            var formatted = language.ToLower() switch
+            {
+                "json" => FormatJson(content),
+                "xml" or "soap" => FormatXml(content),
+                _ => content
+            };
+
+            // Apply basic syntax highlighting with HTML escaping
+            return ApplyHighlighting(formatted, language);
+        }
+        catch
+        {
+            return System.Net.WebUtility.HtmlEncode(content);
+        }
+    }
+
+    private string FormatJson(string json)
+    {
+        try
+        {
+            var obj = System.Text.Json.JsonSerializer.Deserialize<object>(json);
+            return System.Text.Json.JsonSerializer.Serialize(obj, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+        }
+        catch
+        {
+            return json;
+        }
+    }
+
+    private string FormatXml(string xml)
+    {
+        try
+        {
+            var doc = new System.Xml.XmlDocument();
+            doc.LoadXml(xml);
+            using var sw = new System.IO.StringWriter();
+            using var xw = System.Xml.XmlWriter.Create(sw, new System.Xml.XmlWriterSettings
+            {
+                Indent = true,
+                IndentChars = "  ",
+                OmitXmlDeclaration = false
+            });
+            doc.Save(xw);
+            return sw.ToString();
+        }
+        catch
+        {
+            return xml;
+        }
+    }
+
+    private string ApplyHighlighting(string content, string language)
+    {
+        var escaped = System.Net.WebUtility.HtmlEncode(content);
+
+        if (language.ToLower() == "json")
+        {
+            // Highlight JSON: strings in green, numbers in blue, keywords in purple
+            escaped = System.Text.RegularExpressions.Regex.Replace(escaped, @"""([^""\\]*(?:\\.[^""\\]*)*)""(\s*:)?",
+                m => m.Groups[2].Success
+                    ? $"<span style=\"color: #9cdcfe;\">{m.Value}</span>" // Property names
+                    : $"<span style=\"color: #ce9178;\">{m.Value}</span>"); // String values
+
+            escaped = System.Text.RegularExpressions.Regex.Replace(escaped, @"\b(true|false|null)\b",
+                "<span style=\"color: #569cd6;\">$1</span>");
+
+            escaped = System.Text.RegularExpressions.Regex.Replace(escaped, @"\b-?\d+\.?\d*\b",
+                "<span style=\"color: #b5cea8;\">$&</span>");
+        }
+        else if (language.ToLower() == "xml" || language.ToLower() == "soap")
+        {
+            // Highlight XML: tags in blue, attributes in cyan, values in orange
+            escaped = System.Text.RegularExpressions.Regex.Replace(escaped, @"&lt;/?([a-zA-Z0-9:_-]+)",
+                "<span style=\"color: #569cd6;\">&lt;$1</span>");
+
+            escaped = System.Text.RegularExpressions.Regex.Replace(escaped, @"([a-zA-Z0-9:_-]+)=",
+                "<span style=\"color: #9cdcfe;\">$1</span>=");
+
+            escaped = System.Text.RegularExpressions.Regex.Replace(escaped, @"&quot;([^&]*)&quot;",
+                "<span style=\"color: #ce9178;\">&quot;$1&quot;</span>");
+
+            escaped = escaped.Replace("&gt;", "<span style=\"color: #569cd6;\">&gt;</span>");
+        }
+
+        return escaped;
+    }
+
+    private async Task CopyToClipboard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Content);
+            Snackbar.Add("Copied to clipboard", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Failed to copy to clipboard", Severity.Error);
+        }
+    }
+}

@@ -7,8 +7,9 @@ namespace QuickApiMapper.Management.Api.Services;
 
 /// <summary>
 /// Service for managing integration mappings.
+/// Uses source-generated logging for high performance.
 /// </summary>
-public class IntegrationService : IIntegrationService
+public partial class IntegrationService : IIntegrationService
 {
     private readonly IIntegrationMappingRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
@@ -64,15 +65,11 @@ public class IntegrationService : IIntegrationService
         }
 
         var entity = MapToEntity(request);
-        entity.Id = Guid.NewGuid();
-        entity.CreatedAt = DateTime.UtcNow;
-        entity.UpdatedAt = DateTime.UtcNow;
-        entity.Version = 1;
 
-        await _repository.AddAsync(entity, cancellationToken);
+        _repository.Add(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Created integration {IntegrationId} with name {Name}", entity.Id, entity.Name);
+        LogIntegrationCreated(entity.Id, entity.Name);
 
         return MapToDto(entity);
     }
@@ -105,8 +102,6 @@ public class IntegrationService : IIntegrationService
         entity.EnableInput = request.EnableInput;
         entity.EnableOutput = request.EnableOutput;
         entity.EnableMessageCapture = request.EnableMessageCapture;
-        entity.UpdatedAt = DateTime.UtcNow;
-        entity.Version++;
 
         // Update field mappings
         entity.FieldMappings = request.FieldMappings?.Select(fm => new FieldMappingEntity
@@ -132,10 +127,10 @@ public class IntegrationService : IIntegrationService
             Value = kv.Value
         }).ToList() ?? [];
 
-        await _repository.UpdateAsync(entity, cancellationToken);
+        _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Updated integration {IntegrationId} to version {Version}", entity.Id, entity.Version);
+        LogIntegrationUpdated(entity.Id, entity.Version);
 
         return MapToDto(entity);
     }
@@ -148,10 +143,10 @@ public class IntegrationService : IIntegrationService
             return false;
         }
 
-        await _repository.DeleteAsync(id, cancellationToken);
+        _repository.Delete(id);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Deleted integration {IntegrationId} with name {Name}", entity.Id, entity.Name);
+        LogIntegrationDeleted(entity.Id, entity.Name);
 
         return true;
     }

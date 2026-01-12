@@ -1,0 +1,151 @@
+@* Side-by-side message diff viewer *@
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudStack Spacing="3">
+        @* Header *@
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h6" Class="font-bold">Message Transformation Comparison</MudText>
+            <MudStack Row="true" Spacing="2">
+                <MudTooltip Text="Toggle view mode">
+                    <MudIconButton Icon="@(IsSideBySide ? Icons.Material.Filled.ViewAgenda : Icons.Material.Filled.ViewColumn)"
+                                  Color="Color.Primary"
+                                  Size="Size.Small"
+                                  OnClick="ToggleViewMode" />
+                </MudTooltip>
+            </MudStack>
+        </MudStack>
+
+        <MudDivider />
+
+        @* Info Cards *@
+        @if (InputMessage != null && OutputMessage != null)
+        {
+            <MudGrid Spacing="2">
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="1" Class="pa-3">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Correlation ID</MudText>
+                            <MudText Typo="Typo.body2" Style="font-family: monospace;">@InputMessage.CorrelationId</MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="1" Class="pa-3">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Processing Time</MudText>
+                            <MudText Typo="Typo.body2">@(OutputMessage.Duration?.TotalMilliseconds.ToString("F0") ?? "N/A")ms</MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+
+        @* Content Comparison *@
+        @if (IsSideBySide)
+        {
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="0" Class="pa-3" Style="background: #f5f5f5;">
+                        <MudText Typo="Typo.subtitle1" Class="font-bold mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.Input" Size="Size.Small" Class="mr-2" />
+                            Input (@(InputMessage?.Direction ?? "Unknown"))
+                        </MudText>
+                        @if (InputMessage != null)
+                        {
+                            <SyntaxHighlighter Content="@InputMessage.Payload" Language="@DetectLanguage(InputMessage.Payload)" />
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">No input message available</MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="0" Class="pa-3" Style="background: #f5f5f5;">
+                        <MudText Typo="Typo.subtitle1" Class="font-bold mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.Output" Size="Size.Small" Class="mr-2" />
+                            Output (@(OutputMessage?.Direction ?? "Unknown"))
+                        </MudText>
+                        @if (OutputMessage != null)
+                        {
+                            <SyntaxHighlighter Content="@OutputMessage.Payload" Language="@DetectLanguage(OutputMessage.Payload)" />
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">No output message available</MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+        else
+        {
+            <MudStack Spacing="3">
+                <MudPaper Elevation="0" Class="pa-3" Style="background: #f5f5f5;">
+                    <MudText Typo="Typo.subtitle1" Class="font-bold mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Input" Size="Size.Small" Class="mr-2" />
+                        Input (@(InputMessage?.Direction ?? "Unknown"))
+                    </MudText>
+                    @if (InputMessage != null)
+                    {
+                        <SyntaxHighlighter Content="@InputMessage.Payload" Language="@DetectLanguage(InputMessage.Payload)" />
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">No input message available</MudText>
+                    }
+                </MudPaper>
+
+                <div class="text-center">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Color="Color.Primary" Size="Size.Large" />
+                </div>
+
+                <MudPaper Elevation="0" Class="pa-3" Style="background: #f5f5f5;">
+                    <MudText Typo="Typo.subtitle1" Class="font-bold mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Output" Size="Size.Small" Class="mr-2" />
+                        Output (@(OutputMessage?.Direction ?? "Unknown"))
+                    </MudText>
+                    @if (OutputMessage != null)
+                    {
+                        <SyntaxHighlighter Content="@OutputMessage.Payload" Language="@DetectLanguage(OutputMessage.Payload)" />
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">No output message available</MudText>
+                    }
+                </MudPaper>
+            </MudStack>
+        }
+    </MudStack>
+</MudPaper>
+
+@using QuickApiMapper.Management.Contracts.Models
+
+@code {
+    [Parameter]
+    public CapturedMessageDto? InputMessage { get; set; }
+
+    [Parameter]
+    public CapturedMessageDto? OutputMessage { get; set; }
+
+    private bool IsSideBySide { get; set; } = true;
+
+    private void ToggleViewMode()
+    {
+        IsSideBySide = !IsSideBySide;
+    }
+
+    private string DetectLanguage(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return "json";
+
+        var trimmed = content.TrimStart();
+        if (trimmed.StartsWith("{") || trimmed.StartsWith("["))
+            return "json";
+        if (trimmed.StartsWith("<"))
+            return "xml";
+
+        return "json";
+    }
+}
