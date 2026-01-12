@@ -77,11 +77,11 @@ Sort by:
 ### Actions
 
 Quick actions for each integration:
-- **▶ Test** - Open test dialog
-- **✏ Edit** - Edit integration
-- **📊 Stats** - View statistics
-- **📧 Messages** - View message history
-- **⋮ More** - Additional options (Clone, Export, Delete)
+- **Test** - Open test dialog
+- **Edit** - Edit integration
+- **Stats** - View statistics
+- **Messages** - View message history
+- **More** - Additional options (Clone, Export, Delete)
 
 ## Creating Integrations
 

@@ -1,6 +1,6 @@
 # QuickApiMapper Documentation
 
-Welcome to the QuickApiMapper documentation! QuickApiMapper is a powerful, flexible API integration and mapping framework for .NET that enables seamless data transformation between different formats and protocols.
+Welcome to the QuickApiMapper documentation. QuickApiMapper is a powerful, flexible API integration and mapping framework for .NET that enables seamless data transformation between different formats and protocols.
 
 ## Overview
 
@@ -156,7 +156,7 @@ For detailed steps, see the [Creating Integrations](articles/creating-integratio
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](articles/contributing.md) for details.
+We welcome contributions. Please see our [Contributing Guide](articles/contributing.md) for details.
 
 ## License
 

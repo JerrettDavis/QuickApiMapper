@@ -1,6 +1,6 @@
 # Contributing to QuickApiMapper
 
-Thank you for your interest in contributing to QuickApiMapper! This guide will help you get started.
+Thank you for your interest in contributing to QuickApiMapper. This guide will help you get started.
 
 ## Code of Conduct
 
@@ -491,4 +491,4 @@ If you have questions, feel free to:
 - Create an issue
 - Contact the maintainers
 
-Thank you for contributing to QuickApiMapper! 
+Thank you for contributing to QuickApiMapper. 

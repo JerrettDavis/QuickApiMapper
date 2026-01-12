@@ -314,7 +314,7 @@ dotnet run
 **Content**:
 ```
 ┌─────────────────────────────────────────────────┐
-│ 🔗 Correlation ID: 31a3dbe3-9b84-4522-b786-...  │
+│ Correlation ID: 31a3dbe3-9b84-4522-b786-...     │
 ├─────────────────────────────────────────────────┤
 │ ▶ Input Message                      [Input]    │
 │                                                  │
@@ -334,7 +334,7 @@ dotnet run
 │                                                  │
 │ Integration: Demo: JSON to SOAP Order Processing│
 │ Timestamp: 2026-01-11 14:32:15.248              │
-│ Processing Duration: ⚡ 125ms                    │
+│ Processing Duration: 125ms                       │
 │ Metadata:                                       │
 │   Source: DemoRunner                            │
 │   TestMode: true                                │
@@ -357,7 +357,7 @@ dotnet run
 **Content**:
 ```
 ┌──────────────────────────────────────────────────┐
-│ 🔗 Correlation ID: 31a3dbe3-9b84-4522-b786-...   │
+│ Correlation ID: 31a3dbe3-9b84-4522-b786-...      │
 ├──────────────────────────────────────────────────┤
 │  ◀ Input                 │  ▶ Output             │
 │                          │                       │

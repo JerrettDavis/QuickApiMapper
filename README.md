@@ -1,15 +1,13 @@
 # QuickApiMapper
 
-QuickApiMapper is a lightweight, configurable gateway that transforms inbound payloads (JSON or XML) into the shape required by downstream systems (JSON, XML, or SOAP) and forwards them, using a behavior pipeline (validation, auth, HTTP config, timing) for cross‑cutting concerns.
+QuickApiMapper is a lightweight, configurable gateway that transforms inbound payloads (JSON or XML) into the shape required by downstream systems (JSON, XML, or SOAP) and forwards them, using a behavior pipeline (validation, auth, HTTP config, timing) for cross-cutting concerns.
 
-## At a glance
-- .NET 10 (C# latest), cross‑platform ASP.NET Core Minimal API.
-- Declarative mappings in appsettings to turn JSON/XML into XML/JSON/SOAP.
-- Extensible transformers (DLLs drop‑in) for custom value conversions.
-- Pluggable behavior pipeline: validation, OAuth/token auth, HTTP client config, timing, etc.
-- OpenAPI document synthesized from mappings + Scalar UI for exploration.
-
----
+## Overview
+- .NET 10 (C# latest), cross-platform ASP.NET Core Minimal API
+- Declarative mappings in appsettings to transform JSON/XML into XML/JSON/SOAP
+- Extensible transformers (drop-in DLLs) for custom value conversions
+- Pluggable behavior pipeline: validation, OAuth/token authentication, HTTP client configuration, timing
+- OpenAPI document synthesized from mappings with Scalar UI for exploration
 
 ## Prerequisites
 - .NET SDK 10.0+
@@ -51,6 +49,126 @@ You can also set ASP.NET Core URLs via environment:
 ```bash
 # Example multi‑binding
 set ASPNETCORE_URLS=http://localhost:5072;https://localhost:7072
+```
+
+---
+
+## Demo Mode
+
+QuickApiMapper includes a comprehensive demo showcasing real-world JSON-to-SOAP transformation with a realistic e-commerce order fulfillment scenario.
+
+### Quick Start Demo
+
+```bash
+# Start all services with Aspire
+cd src/QuickApiMapper.Host.AppHost
+dotnet run
+
+# The demo includes:
+# - Pre-configured integrations (JSON→SOAP, SOAP→JSON)
+# - Sample e-commerce and warehouse APIs
+# - Visual Designer Dashboard for monitoring
+# - 10 pre-seeded sample orders
+```
+
+**Open in Browser**:
+- **Designer Dashboard**: https://localhost:7002
+- **Aspire Dashboard**: http://localhost:15000
+- **Demo APIs**: See [DEMO_QUICK_START.md](DEMO_QUICK_START.md)
+
+### Demo Features
+
+The demo showcases:
+- **JSON to SOAP transformation** with 16 field mappings
+- **Three transformers**: Email normalization (ToLower), SKU standardization (ToUpper), Priority code mapping (MapValue)
+- **Array handling**: Multi-item orders with `items[*]` notation
+- **Message capture**: Complete audit trail of input/output payloads
+- **RabbitMQ integration**: Async message queue processing
+- **Real-time monitoring**: Live dashboard with statistics and message history
+- **Production-ready performance**: Sub-200ms transformation latency
+
+### Demo Documentation
+
+| Document | Description |
+|----------|-------------|
+| [DEMO_QUICK_START.md](DEMO_QUICK_START.md) | 5-minute quick start guide |
+| [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) | Complete demo walkthrough with step-by-step instructions |
+| [docs/API_SAMPLES.md](docs/API_SAMPLES.md) | cURL commands, Postman collection, integration tests |
+| [docs/ARCHITECTURE_DEMO.md](docs/ARCHITECTURE_DEMO.md) | Visual architecture with Mermaid diagrams |
+| [docs/DEMO_PRESENTATION_SCRIPT.md](docs/DEMO_PRESENTATION_SCRIPT.md) | Presentation script for live demos and videos |
+| [docs/DEMO_QUICK_REFERENCE.md](docs/DEMO_QUICK_REFERENCE.md) | One-page cheat sheet with all URLs and commands |
+| [docs/DEMO_FAQ.md](docs/DEMO_FAQ.md) | Frequently asked questions |
+| [docs/DEMO_DATA.md](docs/DEMO_DATA.md) | Complete demo data documentation |
+
+### Demo Scenario
+
+**Modern E-Commerce Platform** (JSON REST API) ➔ **QuickApiMapper** ➔ **Legacy Warehouse System** (SOAP Service)
+
+**Sample Order** (JSON):
+```json
+{
+  "orderId": "ORD-2026-001",
+  "customerEmail": "JOHN.SMITH@EXAMPLE.COM",
+  "items": [{"sku": "laptop-xps15", "quantity": 1, "unitPrice": 599.99}],
+  "priority": "EXPRESS"
+}
+```
+
+**Transformed Output** (SOAP):
+```xml
+<soap:Envelope>
+  <soap:Body>
+    <SubmitFulfillmentRequest>
+      <OrderNumber>ORD-2026-001</OrderNumber>
+      <CustomerInfo>
+        <ContactEmail>john.smith@example.com</ContactEmail>
+      </CustomerInfo>
+      <LineItems>
+        <Item><SKU>LAPTOP-XPS15</SKU><Qty>1</Qty></Item>
+      </LineItems>
+      <PriorityCode>EXP</PriorityCode>
+    </SubmitFulfillmentRequest>
+  </soap:Body>
+</soap:Envelope>
+```
+
+**Transformations Applied**:
+- Email: `JOHN.SMITH@EXAMPLE.COM` → `john.smith@example.com` (ToLower)
+- SKU: `laptop-xps15` → `LAPTOP-XPS15` (ToUpper)
+- Priority: `EXPRESS` → `EXP` (MapValue)
+
+### Try the Demo
+
+```bash
+# Submit a sample order
+curl -X POST http://localhost:5000/api/demo/fulfillment/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderId": "ORD-TEST-001",
+    "customerName": "Jane Anderson",
+    "customerEmail": "JANE@EXAMPLE.COM",
+    "orderDate": "2026-01-11T10:00:00Z",
+    "totalAmount": 1299.99,
+    "currency": "USD",
+    "items": [{"sku": "laptop-macbook-pro", "productName": "MacBook Pro", "quantity": 1, "unitPrice": 1299.99}],
+    "shippingAddress": {"street": "123 Main St", "city": "Seattle", "state": "WA", "postalCode": "98101", "country": "USA"},
+    "priority": "EXPRESS"
+  }'
+
+# View the transformation in the Designer Dashboard
+# Open https://localhost:7002 → Message History
+```
+
+### Disable Demo Mode for Production
+
+Demo mode is automatically disabled in non-Development environments. To explicitly disable:
+
+```json
+{
+  "DemoMode": {
+    "EnableDemoMode": false
+  }
+}
 ```
 
 ---
@@ -274,12 +392,12 @@ Use these prefixes to control versioning and releases:
 | `test:` | `test: add unit tests` | No release (build only) |
 
 **Automatic Release Process**:
-1. Commit with `feat:` or `fix:` prefix → Push to main
+1. Commit with `feat:` or `fix:` prefix and push to main
 2. CI workflow builds, tests, and analyzes commits
 3. Tag automatically created (e.g., `v0.2.0`)
-4. Release workflow triggered → NuGet packages published
+4. Release workflow triggered and NuGet packages published
 
-**No manual tagging required!** 
+Manual tagging is not required. 
 
 For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
