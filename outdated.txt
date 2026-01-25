@@ -1,0 +1,54 @@
+Discovering projects...
+Analyzing project(s)...
+Analyzing dependencies...
+» Demo.JsonApi
+  [net10.0]
+  Scalar.AspNetCore  2.12.11 -> 2.12.18
+
+» QuickApiMapper.Application
+  [net10.0]
+  Scalar.AspNetCore  2.12.11 -> 2.12.18
+
+» QuickApiMapper.Host.ServiceDefaults
+  [net10.0]
+  OpenTelemetry.Exporter.OpenTelemetryProtocol  1.14.0 -> 1.15.0
+  OpenTelemetry.Extensions.Hosting              1.14.0 -> 1.15.0
+  OpenTelemetry.Instrumentation.AspNetCore      1.14.0 -> 1.15.0
+  OpenTelemetry.Instrumentation.Http            1.14.0 -> 1.15.0
+  OpenTelemetry.Instrumentation.Runtime         1.14.0 -> 1.15.0
+
+» QuickApiMapper.Management.Api
+  [net10.0]
+  Scalar.AspNetCore  2.12.11 -> 2.12.18
+
+» QuickApiMapper.Web
+  [net10.0]
+  Scalar.AspNetCore  2.12.11 -> 2.12.18
+
+Version color legend:
+<red>   : Major version update or pre-release version. Possible breaking changes.
+<yellow>: Minor version update. Backwards-compatible features added.
+<green> : Patch version update. Backwards-compatible bug fixes.
+
+Upgrading package Scalar.AspNetCore...
+Project Demo.JsonApi [net10.0] upgraded successfully
+Project QuickApiMapper.Application [net10.0] upgraded successfully
+Project QuickApiMapper.Management.Api [net10.0] upgraded successfully
+Project QuickApiMapper.Web [net10.0] upgraded successfully
+
+Upgrading package OpenTelemetry.Exporter.OpenTelemetryProtocol...
+Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
+
+Upgrading package OpenTelemetry.Extensions.Hosting...
+Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
+
+Upgrading package OpenTelemetry.Instrumentation.AspNetCore...
+Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
+
+Upgrading package OpenTelemetry.Instrumentation.Http...
+Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
+
+Upgrading package OpenTelemetry.Instrumentation.Runtime...
+Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
+
+Elapsed: 00:00:31.6702684
