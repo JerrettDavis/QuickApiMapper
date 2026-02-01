@@ -3,27 +3,27 @@ Analyzing project(s)...
 Analyzing dependencies...
 » Demo.JsonApi
   [net10.0]
-  Scalar.AspNetCore  2.12.11 -> 2.12.18
+  Scalar.AspNetCore  2.12.18 -> 2.12.27
 
 » QuickApiMapper.Application
   [net10.0]
-  Scalar.AspNetCore  2.12.11 -> 2.12.18
+  Scalar.AspNetCore  2.12.18 -> 2.12.27
 
-» QuickApiMapper.Host.ServiceDefaults
+» QuickApiMapper.Extensions.gRPC
   [net10.0]
-  OpenTelemetry.Exporter.OpenTelemetryProtocol  1.14.0 -> 1.15.0
-  OpenTelemetry.Extensions.Hosting              1.14.0 -> 1.15.0
-  OpenTelemetry.Instrumentation.AspNetCore      1.14.0 -> 1.15.0
-  OpenTelemetry.Instrumentation.Http            1.14.0 -> 1.15.0
-  OpenTelemetry.Instrumentation.Runtime         1.14.0 -> 1.15.0
+  Google.Protobuf  3.33.4 -> 3.33.5
+
+» QuickApiMapper.Host.AppHost
+  [net10.0]
+  Google.Protobuf  3.33.4 -> 3.33.5
 
 » QuickApiMapper.Management.Api
   [net10.0]
-  Scalar.AspNetCore  2.12.11 -> 2.12.18
+  Scalar.AspNetCore  2.12.18 -> 2.12.27
 
 » QuickApiMapper.Web
   [net10.0]
-  Scalar.AspNetCore  2.12.11 -> 2.12.18
+  Scalar.AspNetCore  2.12.18 -> 2.12.27
 
 Version color legend:
 <red>   : Major version update or pre-release version. Possible breaking changes.
@@ -36,19 +36,8 @@ Project QuickApiMapper.Application [net10.0] upgraded successfully
 Project QuickApiMapper.Management.Api [net10.0] upgraded successfully
 Project QuickApiMapper.Web [net10.0] upgraded successfully
 
-Upgrading package OpenTelemetry.Exporter.OpenTelemetryProtocol...
-Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
+Upgrading package Google.Protobuf...
+Project QuickApiMapper.Extensions.gRPC [net10.0] upgraded successfully
+Project QuickApiMapper.Host.AppHost [net10.0] upgraded successfully
 
-Upgrading package OpenTelemetry.Extensions.Hosting...
-Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
-
-Upgrading package OpenTelemetry.Instrumentation.AspNetCore...
-Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
-
-Upgrading package OpenTelemetry.Instrumentation.Http...
-Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
-
-Upgrading package OpenTelemetry.Instrumentation.Runtime...
-Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
-
-Elapsed: 00:00:31.6702684
+Elapsed: 00:00:27.3596039
