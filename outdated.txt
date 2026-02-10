@@ -3,27 +3,27 @@ Analyzing project(s)...
 Analyzing dependencies...
 » Demo.JsonApi
   [net10.0]
-  Scalar.AspNetCore  2.12.18 -> 2.12.27
+  Scalar.AspNetCore  2.12.30 -> 2.12.36
 
 » QuickApiMapper.Application
   [net10.0]
-  Scalar.AspNetCore  2.12.18 -> 2.12.27
+  Scalar.AspNetCore  2.12.30 -> 2.12.36
 
 » QuickApiMapper.Extensions.gRPC
   [net10.0]
-  Google.Protobuf  3.33.4 -> 3.33.5
+  Grpc.Tools  2.76.0 -> 2.78.0
 
-» QuickApiMapper.Host.AppHost
+» QuickApiMapper.IntegrationTests
   [net10.0]
-  Google.Protobuf  3.33.4 -> 3.33.5
+  FluentAssertions  7.2.0 -> 7.2.1
 
 » QuickApiMapper.Management.Api
   [net10.0]
-  Scalar.AspNetCore  2.12.18 -> 2.12.27
+  Scalar.AspNetCore  2.12.30 -> 2.12.36
 
 » QuickApiMapper.Web
   [net10.0]
-  Scalar.AspNetCore  2.12.18 -> 2.12.27
+  Scalar.AspNetCore  2.12.30 -> 2.12.36
 
 Version color legend:
 <red>   : Major version update or pre-release version. Possible breaking changes.
@@ -36,8 +36,10 @@ Project QuickApiMapper.Application [net10.0] upgraded successfully
 Project QuickApiMapper.Management.Api [net10.0] upgraded successfully
 Project QuickApiMapper.Web [net10.0] upgraded successfully
 
-Upgrading package Google.Protobuf...
+Upgrading package Grpc.Tools...
 Project QuickApiMapper.Extensions.gRPC [net10.0] upgraded successfully
-Project QuickApiMapper.Host.AppHost [net10.0] upgraded successfully
 
-Elapsed: 00:00:27.3596039
+Upgrading package FluentAssertions...
+Project QuickApiMapper.IntegrationTests [net10.0] upgraded successfully
+
+Elapsed: 00:00:27.0613786
