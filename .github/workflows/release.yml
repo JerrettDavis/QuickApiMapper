@@ -199,7 +199,7 @@ jobs:
           ls -lh ./artifacts/packages/
 
       - name: Upload packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages-release
           path: ./artifacts/packages/*.nupkg
@@ -296,7 +296,7 @@ jobs:
           Compress-Archive -Path designer-web-${{ matrix.rid }} -DestinationPath designer-web-${{ matrix.rid }}.zip
 
       - name: Upload executables
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: executables-${{ matrix.rid }}
           path: |
