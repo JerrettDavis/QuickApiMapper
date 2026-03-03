@@ -67,7 +67,7 @@
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <!-- Web Packages -->
     <PackageVersion Include="Scalar.AspNetCore" Version="2.12.50" />
-    <PackageVersion Include="MudBlazor" Version="8.15.0" />
+    <PackageVersion Include="MudBlazor" Version="9.0.0" />
     <!-- SOAP Packages -->
     <PackageVersion Include="SoapCore" Version="1.2.1.12" />
   </ItemGroup>
