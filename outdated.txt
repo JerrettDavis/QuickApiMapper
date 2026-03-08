@@ -1,0 +1,53 @@
+Discovering projects...
+Analyzing project(s)...
+Analyzing dependencies...
+» Demo.JsonApi
+  [net10.0]
+  Scalar.AspNetCore  2.12.50 -> 2.13.1
+
+» QuickApiMapper.Application
+  [net10.0]
+  CSharpFunctionalExtensions  3.6.0   -> 3.7.0 
+  Scalar.AspNetCore           2.12.50 -> 2.13.1
+
+» QuickApiMapper.IntegrationTests
+  [net10.0]
+  NUnit            4.5.0  -> 4.5.1 
+  NUnit.Analyzers  4.11.2 -> 4.12.0
+
+» QuickApiMapper.Management.Api
+  [net10.0]
+  Scalar.AspNetCore  2.12.50 -> 2.13.1
+
+» QuickApiMapper.UnitTests
+  [net10.0]
+  NUnit            4.5.0  -> 4.5.1 
+  NUnit.Analyzers  4.11.2 -> 4.12.0
+
+» QuickApiMapper.Web
+  [net10.0]
+  Scalar.AspNetCore  2.12.50 -> 2.13.1
+
+Version color legend:
+<red>   : Major version update or pre-release version. Possible breaking changes.
+<yellow>: Minor version update. Backwards-compatible features added.
+<green> : Patch version update. Backwards-compatible bug fixes.
+
+Upgrading package Scalar.AspNetCore...
+Project Demo.JsonApi [net10.0] upgraded successfully
+Project QuickApiMapper.Application [net10.0] upgraded successfully
+Project QuickApiMapper.Management.Api [net10.0] upgraded successfully
+Project QuickApiMapper.Web [net10.0] upgraded successfully
+
+Upgrading package CSharpFunctionalExtensions...
+Project QuickApiMapper.Application [net10.0] upgraded successfully
+
+Upgrading package NUnit...
+Project QuickApiMapper.IntegrationTests [net10.0] upgraded successfully
+Project QuickApiMapper.UnitTests [net10.0] upgraded successfully
+
+Upgrading package NUnit.Analyzers...
+Project QuickApiMapper.IntegrationTests [net10.0] upgraded successfully
+Project QuickApiMapper.UnitTests [net10.0] upgraded successfully
+
+Elapsed: 00:00:36.4908706
