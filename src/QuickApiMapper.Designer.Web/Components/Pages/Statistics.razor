@@ -165,9 +165,10 @@
                     <MudText Typo="Typo.h6" Class="font-bold mb-4">Message Volume Over Time</MudText>
                     @if (_volumeChartData.Any())
                     {
-                        <MudChart ChartType="ChartType.Line"
+                        <MudChart T="double"
+                                 ChartType="ChartType.Line"
                                  ChartSeries="@_volumeChartSeries"
-                                 XAxisLabels="@_volumeChartLabels.ToArray()"
+                                 ChartLabels="@_volumeChartLabels.ToArray()"
                                  Width="100%"
                                  Height="300px"
                                  ChartOptions="@_lineChartOptions" />
@@ -187,9 +188,10 @@
                     <MudText Typo="Typo.h6" Class="font-bold mb-4">Success vs Failed</MudText>
                     @if (_totalMessages > 0)
                     {
-                        <MudChart ChartType="ChartType.Donut"
-                                 InputData="@_statusChartData.ToArray()"
-                                 InputLabels="@_statusChartLabels.ToArray()"
+                        <MudChart T="double"
+                                 ChartType="ChartType.Donut"
+                                 ChartSeries="@_statusChartSeries"
+                                 ChartLabels="@_statusChartLabels.ToArray()"
                                  Width="100%"
                                  Height="300px"
                                  ChartOptions="@_pieChartOptions" />
@@ -209,9 +211,10 @@
                     <MudText Typo="Typo.h6" Class="font-bold mb-4">Processing Time Distribution</MudText>
                     @if (_processingTimeData.Any())
                     {
-                        <MudChart ChartType="ChartType.Bar"
+                        <MudChart T="double"
+                                 ChartType="ChartType.Bar"
                                  ChartSeries="@_processingTimeSeries"
-                                 XAxisLabels="@_processingTimeLabels.ToArray()"
+                                 ChartLabels="@_processingTimeLabels.ToArray()"
                                  Width="100%"
                                  Height="300px"
                                  ChartOptions="@_barChartOptions" />
@@ -282,28 +285,29 @@
     // Chart data
     private List<double> _volumeChartData = new();
     private List<string> _volumeChartLabels = new();
-    private List<ChartSeries> _volumeChartSeries = new();
+    private List<ChartSeries<double>> _volumeChartSeries = new();
     private List<double> _statusChartData = new();
     private List<string> _statusChartLabels = new();
+    private List<ChartSeries<double>> _statusChartSeries = new();
     private List<double> _processingTimeData = new();
     private List<string> _processingTimeLabels = new();
-    private List<ChartSeries> _processingTimeSeries = new();
+    private List<ChartSeries<double>> _processingTimeSeries = new();
 
     private List<IntegrationStatDto> _integrationStats = new();
 
-    private ChartOptions _lineChartOptions = new()
+    private readonly LineChartOptions _lineChartOptions = new()
     {
         YAxisTicks = 10,
         MaxNumYAxisTicks = 10,
         LineStrokeWidth = 3
     };
 
-    private ChartOptions _pieChartOptions = new()
+    private readonly DonutChartOptions _pieChartOptions = new()
     {
         ChartPalette = new[] { "#4CAF50", "#F44336", "#FFC107" }
     };
 
-    private ChartOptions _barChartOptions = new()
+    private readonly BarChartOptions _barChartOptions = new()
     {
         YAxisTicks = 10,
         MaxNumYAxisTicks = 10
@@ -414,9 +418,9 @@
         _volumeChartLabels = groupedByHour.Select(g => g.Key.ToString("MM/dd HH:mm")).ToList();
         _volumeChartData = groupedByHour.Select(g => (double)g.Count()).ToList();
 
-        _volumeChartSeries = new List<ChartSeries>
+        _volumeChartSeries = new List<ChartSeries<double>>
         {
-            new ChartSeries { Name = "Messages", Data = _volumeChartData.ToArray() }
+            new ChartSeries<double> { Name = "Messages", Data = _volumeChartData.ToArray() }
         };
     }
 
@@ -428,6 +432,10 @@
 
         _statusChartData = new List<double> { successful, failed, pending };
         _statusChartLabels = new List<string> { "Success", "Failed", "Pending" };
+        _statusChartSeries = new List<ChartSeries<double>>
+        {
+            new ChartSeries<double> { Data = _statusChartData.ToArray() }
+        };
     }
 
     private void PrepareProcessingTimeChart(List<CapturedMessageDto> messages)
@@ -457,9 +465,9 @@
             _processingTimeData.Add(bucketCounts[i]);
         }
 
-        _processingTimeSeries = new List<ChartSeries>
+        _processingTimeSeries = new List<ChartSeries<double>>
         {
-            new ChartSeries { Name = "Message Count", Data = _processingTimeData.ToArray() }
+            new ChartSeries<double> { Name = "Message Count", Data = _processingTimeData.ToArray() }
         };
     }
 
