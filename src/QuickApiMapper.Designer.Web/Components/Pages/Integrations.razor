@@ -326,7 +326,7 @@
 
     private async Task ConfirmDelete(IntegrationDto integration)
     {
-        bool? result = await DialogService.ShowMessageBox(
+        bool? result = await DialogService.ShowMessageBoxAsync(
             "Confirm Delete",
             $"Are you sure you want to delete the integration '{integration.Name}'? This action cannot be undone.",
             yesText: "Delete", cancelText: "Cancel");
