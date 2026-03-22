@@ -3,117 +3,48 @@ Analyzing project(s)...
 Analyzing dependencies...
 » Demo.JsonApi
   [net10.0]
-  Microsoft.AspNetCore.OpenApi  10.0.3 -> 10.0.5
-  Scalar.AspNetCore             2.13.1 -> 2.13.8
-
-» Demo.SoapApi
-  [net10.0]
-  Microsoft.AspNetCore.OpenApi  10.0.3 -> 10.0.5
+  Scalar.AspNetCore  2.13.9 -> 2.13.13
 
 » QuickApiMapper.Application
   [net10.0]
-  Microsoft.Extensions.Caching.Abstractions  10.0.3 -> 10.0.5
-  Microsoft.Extensions.Caching.Memory        10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Abstractions  10.0.3 -> 10.0.5
-  Scalar.AspNetCore                          2.13.1 -> 2.13.8
+  Scalar.AspNetCore  2.13.9 -> 2.13.13
 
-» QuickApiMapper.Behaviors
+» QuickApiMapper.Designer.Web
   [net10.0]
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-  Microsoft.Extensions.Http                              10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Abstractions              10.0.3 -> 10.0.5
-
-» QuickApiMapper.Contracts
-  [net10.0]
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Abstractions              10.0.3 -> 10.0.5
+  MudBlazor  9.1.0 -> 9.2.0
 
 » QuickApiMapper.Extensions.gRPC
   [net10.0]
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-  Microsoft.Extensions.Http                              10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Abstractions              10.0.3 -> 10.0.5
+  Google.Protobuf  3.34.0 -> 3.34.1
 
-» QuickApiMapper.Extensions.RabbitMQ
+» QuickApiMapper.Host.AppHost
   [net10.0]
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-  Microsoft.Extensions.Hosting.Abstractions              10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Abstractions              10.0.3 -> 10.0.5
-
-» QuickApiMapper.Extensions.ServiceBus
-  [net10.0]
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-  Microsoft.Extensions.Hosting.Abstractions              10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Abstractions              10.0.3 -> 10.0.5
-
-» QuickApiMapper.Host.ServiceDefaults
-  [net10.0]
-  Microsoft.Extensions.Http.Resilience      10.3.0 -> 10.4.0
-  Microsoft.Extensions.ServiceDiscovery     10.3.0 -> 10.4.0
-  OpenTelemetry.Instrumentation.AspNetCore  1.15.0 -> 1.15.1
+  Aspire.Hosting.PostgreSQL  13.1.2 -> 13.1.3
+  Aspire.Hosting.RabbitMQ    13.1.2 -> 13.1.3
+  Aspire.Hosting.Redis       13.1.2 -> 13.1.3
+  Google.Protobuf            3.34.0 -> 3.34.1
 
 » QuickApiMapper.IntegrationTests
   [net10.0]
-  Microsoft.Extensions.DependencyInjection   10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Abstractions  10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Console       10.0.3 -> 10.0.5
-  Testcontainers.PostgreSql                  4.10.0 -> 4.11.0
-  Testcontainers.RabbitMq                    4.10.0 -> 4.11.0
+  FluentAssertions   7.2.1 -> 7.2.2
+  NUnit3TestAdapter  6.1.0 -> 6.2.0
 
 » QuickApiMapper.Management.Api
   [net10.0]
-  Microsoft.AspNetCore.OpenApi          10.0.3 -> 10.0.5
-  Microsoft.EntityFrameworkCore.Design  10.0.3 -> 10.0.5
-  Scalar.AspNetCore                     2.13.1 -> 2.13.8
+  Scalar.AspNetCore  2.13.9 -> 2.13.13
 
-» QuickApiMapper.MessageCapture.InMemory
+» QuickApiMapper.UnitTests
   [net10.0]
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-
-» QuickApiMapper.Persistence.Abstractions
-  [net10.0]
-  Microsoft.EntityFrameworkCore             10.0.3 -> 10.0.5
-  Microsoft.EntityFrameworkCore.Relational  10.0.3 -> 10.0.5
-
-» QuickApiMapper.Persistence.PostgreSQL
-  [net10.0]
-  Microsoft.EntityFrameworkCore                          10.0.3 -> 10.0.5
-  Microsoft.EntityFrameworkCore.Design                   10.0.3 -> 10.0.5
-  Microsoft.EntityFrameworkCore.Relational               10.0.3 -> 10.0.5
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-  Npgsql.EntityFrameworkCore.PostgreSQL                  10.0.0 -> 10.0.1
-
-» QuickApiMapper.Persistence.SQLite
-  [net10.0]
-  Microsoft.EntityFrameworkCore                          10.0.3 -> 10.0.5
-  Microsoft.EntityFrameworkCore.Design                   10.0.3 -> 10.0.5
-  Microsoft.EntityFrameworkCore.Relational               10.0.3 -> 10.0.5
-  Microsoft.EntityFrameworkCore.Sqlite                   10.0.3 -> 10.0.5
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-
-» QuickApiMapper.Tools.Migrator
-  [net10.0]
-  Microsoft.Extensions.Configuration                     10.0.3 -> 10.0.5
-  Microsoft.Extensions.Configuration.Json                10.0.3 -> 10.0.5
-  Microsoft.Extensions.DependencyInjection.Abstractions  10.0.3 -> 10.0.5
-  Microsoft.Extensions.Hosting                           10.0.3 -> 10.0.5
-  Microsoft.Extensions.Logging.Abstractions              10.0.3 -> 10.0.5
+  NUnit3TestAdapter  6.1.0 -> 6.2.0
 
 » QuickApiMapper.Web
   [net10.0]
-  Microsoft.AspNetCore.OpenApi  10.0.3 -> 10.0.5
-  Scalar.AspNetCore             2.13.1 -> 2.13.8
+  Scalar.AspNetCore  2.13.9 -> 2.13.13
 
 Version color legend:
 <red>   : Major version update or pre-release version. Possible breaking changes.
 <yellow>: Minor version update. Backwards-compatible features added.
 <green> : Patch version update. Backwards-compatible bug fixes.
-
-Upgrading package Microsoft.AspNetCore.OpenApi...
-Project Demo.JsonApi [net10.0] upgraded successfully
-Project Demo.SoapApi [net10.0] upgraded successfully
-Project QuickApiMapper.Management.Api [net10.0] upgraded successfully
-Project QuickApiMapper.Web [net10.0] upgraded successfully
 
 Upgrading package Scalar.AspNetCore...
 Project Demo.JsonApi [net10.0] upgraded successfully
@@ -121,90 +52,27 @@ Project QuickApiMapper.Application [net10.0] upgraded successfully
 Project QuickApiMapper.Management.Api [net10.0] upgraded successfully
 Project QuickApiMapper.Web [net10.0] upgraded successfully
 
-Upgrading package Microsoft.Extensions.Caching.Abstractions...
-Project QuickApiMapper.Application [net10.0] upgraded successfully
+Upgrading package MudBlazor...
+Project QuickApiMapper.Designer.Web [net10.0] upgraded successfully
 
-Upgrading package Microsoft.Extensions.Caching.Memory...
-Project QuickApiMapper.Application [net10.0] upgraded successfully
-
-Upgrading package Microsoft.Extensions.Logging.Abstractions...
-Project QuickApiMapper.Application [net10.0] upgraded successfully
-Project QuickApiMapper.Behaviors [net10.0] upgraded successfully
-Project QuickApiMapper.Contracts [net10.0] upgraded successfully
+Upgrading package Google.Protobuf...
 Project QuickApiMapper.Extensions.gRPC [net10.0] upgraded successfully
-Project QuickApiMapper.Extensions.RabbitMQ [net10.0] upgraded successfully
-Project QuickApiMapper.Extensions.ServiceBus [net10.0] upgraded successfully
-Project QuickApiMapper.IntegrationTests [net10.0] upgraded successfully
-Project QuickApiMapper.Tools.Migrator [net10.0] upgraded successfully
+Project QuickApiMapper.Host.AppHost [net10.0] upgraded successfully
 
-Upgrading package Microsoft.Extensions.DependencyInjection.Abstractions...
-Project QuickApiMapper.Behaviors [net10.0] upgraded successfully
-Project QuickApiMapper.Contracts [net10.0] upgraded successfully
-Project QuickApiMapper.Extensions.gRPC [net10.0] upgraded successfully
-Project QuickApiMapper.Extensions.RabbitMQ [net10.0] upgraded successfully
-Project QuickApiMapper.Extensions.ServiceBus [net10.0] upgraded successfully
-Project QuickApiMapper.MessageCapture.InMemory [net10.0] upgraded successfully
-Project QuickApiMapper.Persistence.PostgreSQL [net10.0] upgraded successfully
-Project QuickApiMapper.Persistence.SQLite [net10.0] upgraded successfully
-Project QuickApiMapper.Tools.Migrator [net10.0] upgraded successfully
+Upgrading package Aspire.Hosting.PostgreSQL...
+Project QuickApiMapper.Host.AppHost [net10.0] upgraded successfully
 
-Upgrading package Microsoft.Extensions.Http...
-Project QuickApiMapper.Behaviors [net10.0] upgraded successfully
-Project QuickApiMapper.Extensions.gRPC [net10.0] upgraded successfully
+Upgrading package Aspire.Hosting.RabbitMQ...
+Project QuickApiMapper.Host.AppHost [net10.0] upgraded successfully
 
-Upgrading package Microsoft.Extensions.Hosting.Abstractions...
-Project QuickApiMapper.Extensions.RabbitMQ [net10.0] upgraded successfully
-Project QuickApiMapper.Extensions.ServiceBus [net10.0] upgraded successfully
+Upgrading package Aspire.Hosting.Redis...
+Project QuickApiMapper.Host.AppHost [net10.0] upgraded successfully
 
-Upgrading package Microsoft.Extensions.Http.Resilience...
-Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
-
-Upgrading package Microsoft.Extensions.ServiceDiscovery...
-Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
-
-Upgrading package OpenTelemetry.Instrumentation.AspNetCore...
-Project QuickApiMapper.Host.ServiceDefaults [net10.0] upgraded successfully
-
-Upgrading package Microsoft.Extensions.DependencyInjection...
+Upgrading package FluentAssertions...
 Project QuickApiMapper.IntegrationTests [net10.0] upgraded successfully
 
-Upgrading package Microsoft.Extensions.Logging.Console...
+Upgrading package NUnit3TestAdapter...
 Project QuickApiMapper.IntegrationTests [net10.0] upgraded successfully
+Project QuickApiMapper.UnitTests [net10.0] upgraded successfully
 
-Upgrading package Testcontainers.PostgreSql...
-Project QuickApiMapper.IntegrationTests [net10.0] upgraded successfully
-
-Upgrading package Testcontainers.RabbitMq...
-Project QuickApiMapper.IntegrationTests [net10.0] upgraded successfully
-
-Upgrading package Microsoft.EntityFrameworkCore.Design...
-Project QuickApiMapper.Management.Api [net10.0] upgraded successfully
-Project QuickApiMapper.Persistence.PostgreSQL [net10.0] upgraded successfully
-Project QuickApiMapper.Persistence.SQLite [net10.0] upgraded successfully
-
-Upgrading package Microsoft.EntityFrameworkCore...
-Project QuickApiMapper.Persistence.Abstractions [net10.0] upgraded successfully
-Project QuickApiMapper.Persistence.PostgreSQL [net10.0] upgraded successfully
-Project QuickApiMapper.Persistence.SQLite [net10.0] upgraded successfully
-
-Upgrading package Microsoft.EntityFrameworkCore.Relational...
-Project QuickApiMapper.Persistence.Abstractions [net10.0] upgraded successfully
-Project QuickApiMapper.Persistence.PostgreSQL [net10.0] upgraded successfully
-Project QuickApiMapper.Persistence.SQLite [net10.0] upgraded successfully
-
-Upgrading package Npgsql.EntityFrameworkCore.PostgreSQL...
-Project QuickApiMapper.Persistence.PostgreSQL [net10.0] upgraded successfully
-
-Upgrading package Microsoft.EntityFrameworkCore.Sqlite...
-Project QuickApiMapper.Persistence.SQLite [net10.0] upgraded successfully
-
-Upgrading package Microsoft.Extensions.Configuration...
-Project QuickApiMapper.Tools.Migrator [net10.0] upgraded successfully
-
-Upgrading package Microsoft.Extensions.Configuration.Json...
-Project QuickApiMapper.Tools.Migrator [net10.0] upgraded successfully
-
-Upgrading package Microsoft.Extensions.Hosting...
-Project QuickApiMapper.Tools.Migrator [net10.0] upgraded successfully
-
-Elapsed: 00:02:30.3883635
+Elapsed: 00:00:52.6201929
