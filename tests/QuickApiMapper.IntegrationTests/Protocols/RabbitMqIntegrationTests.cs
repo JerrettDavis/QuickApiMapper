@@ -320,6 +320,10 @@ public class RabbitMqIntegrationTests
         await using var publishConn = await _connectionFactory!.CreateConnectionAsync();
         await using var publishCh = await publishConn.CreateChannelAsync();
         {
+            // Declare the queue before publishing to avoid a race condition where the
+            // consumer's background service (ExecuteAsync) hasn't declared it yet.
+            await publishCh.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
+
             var body = Encoding.UTF8.GetBytes(@"{""testId"": 999}");
             var properties = new BasicProperties { Persistent = true, ContentType = "application/json" };
 
