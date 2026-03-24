@@ -23,13 +23,15 @@ public class RabbitMqConsumer : BackgroundService
 {
     private readonly ILogger<RabbitMqConsumer> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IConnection _connection;
-    private readonly IModel _channel;
+    private readonly IConnectionFactory _connectionFactory;
     private readonly string _queueName;
     private readonly string _exchangeName;
     private readonly string _routingKey;
     private readonly int _prefetchCount;
     private readonly string? _defaultIntegrationName;
+
+    private IConnection? _connection;
+    private IChannel? _channel;
 
     public RabbitMqConsumer(
         ILogger<RabbitMqConsumer> logger,
@@ -43,59 +45,69 @@ public class RabbitMqConsumer : BackgroundService
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _queueName = queueName ?? throw new ArgumentNullException(nameof(queueName));
         _exchangeName = exchangeName ?? string.Empty;
         _routingKey = routingKey ?? string.Empty;
         _prefetchCount = prefetchCount;
         _defaultIntegrationName = defaultIntegrationName;
+    }
 
+    private async Task InitializeAsync(CancellationToken cancellationToken)
+    {
         // Create connection and channel
-        _connection = connectionFactory.CreateConnection();
-        _channel = _connection.CreateModel();
+#pragma warning disable IDISP003
+        _connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
+        _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
+#pragma warning restore IDISP003
 
         // Declare queue with dead-letter exchange support
-        var queueArgs = new Dictionary<string, object>
+        var queueArgs = new Dictionary<string, object?>
         {
             ["x-dead-letter-exchange"] = $"{_queueName}.dlx"
         };
 
-        _channel.QueueDeclare(
+        await _channel.QueueDeclareAsync(
             queue: _queueName,
             durable: true,
             exclusive: false,
             autoDelete: false,
-            arguments: queueArgs);
+            arguments: queueArgs,
+            cancellationToken: cancellationToken);
 
         // Declare dead-letter queue
-        _channel.ExchangeDeclare($"{_queueName}.dlx", "direct", durable: true);
-        _channel.QueueDeclare($"{_queueName}.dead-letter", durable: true, exclusive: false, autoDelete: false);
-        _channel.QueueBind($"{_queueName}.dead-letter", $"{_queueName}.dlx", _queueName);
+        await _channel.ExchangeDeclareAsync($"{_queueName}.dlx", "direct", durable: true, cancellationToken: cancellationToken);
+        await _channel.QueueDeclareAsync($"{_queueName}.dead-letter", durable: true, exclusive: false, autoDelete: false, cancellationToken: cancellationToken);
+        await _channel.QueueBindAsync($"{_queueName}.dead-letter", $"{_queueName}.dlx", _queueName, cancellationToken: cancellationToken);
 
         // Bind to exchange if specified
         if (!string.IsNullOrEmpty(_exchangeName))
         {
-            _channel.QueueBind(
+            await _channel.QueueBindAsync(
                 queue: _queueName,
                 exchange: _exchangeName,
-                routingKey: _routingKey);
+                routingKey: _routingKey,
+                cancellationToken: cancellationToken);
         }
 
         // Set QoS to limit prefetch
-        _channel.BasicQos(prefetchSize: 0, prefetchCount: (ushort)_prefetchCount, global: false);
+        await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: (ushort)_prefetchCount, global: false, cancellationToken: cancellationToken);
 
         _logger.LogInformation("RabbitMQ consumer initialized for queue {Queue} with prefetch {Prefetch}",
             _queueName, _prefetchCount);
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await InitializeAsync(stoppingToken);
+
         _logger.LogInformation("Starting RabbitMQ consumer for queue: {Queue}", _queueName);
 
-        var consumer = new EventingBasicConsumer(_channel);
+        var consumer = new AsyncEventingBasicConsumer(_channel!);
 
-        consumer.Received += async (model, ea) =>
+        consumer.ReceivedAsync += async (model, ea) =>
         {
-            var correlationId = ea.BasicProperties?.CorrelationId ?? Guid.NewGuid().ToString();
+            var correlationId = ea.BasicProperties.CorrelationId ?? Guid.NewGuid().ToString();
             var deliveryTag = ea.DeliveryTag;
 
             try
@@ -111,7 +123,7 @@ public class RabbitMqConsumer : BackgroundService
                 await ProcessMessageAsync(message, ea, correlationId, stoppingToken);
 
                 // Acknowledge the message
-                _channel.BasicAck(deliveryTag: deliveryTag, multiple: false);
+                await _channel!.BasicAckAsync(deliveryTag: deliveryTag, multiple: false, cancellationToken: stoppingToken);
 
                 _logger.LogInformation("Successfully processed and acknowledged message: {DeliveryTag}", deliveryTag);
             }
@@ -124,18 +136,20 @@ public class RabbitMqConsumer : BackgroundService
                 await CaptureFailedMessageAsync(correlationId, ex.Message);
 
                 // Reject and send to dead-letter queue (do not requeue to avoid infinite loops)
-                _channel.BasicNack(deliveryTag: deliveryTag, multiple: false, requeue: false);
+                await _channel!.BasicNackAsync(deliveryTag: deliveryTag, multiple: false, requeue: false, cancellationToken: stoppingToken);
 
                 _logger.LogWarning("Message {DeliveryTag} rejected and sent to dead-letter queue", deliveryTag);
             }
         };
 
-        _channel.BasicConsume(
+        await _channel!.BasicConsumeAsync(
             queue: _queueName,
             autoAck: false,
-            consumer: consumer);
+            consumer: consumer,
+            cancellationToken: stoppingToken);
 
-        return Task.CompletedTask;
+        // Keep the worker alive until cancellation
+        await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
     }
 
     /// <summary>
@@ -317,7 +331,7 @@ public class RabbitMqConsumer : BackgroundService
     private string? DetermineIntegrationName(BasicDeliverEventArgs eventArgs)
     {
         // First check message headers for IntegrationName
-        if (eventArgs.BasicProperties?.Headers != null &&
+        if (eventArgs.BasicProperties.Headers != null &&
             eventArgs.BasicProperties.Headers.TryGetValue("IntegrationName", out var integrationNameObj))
         {
             if (integrationNameObj is byte[] bytes)
@@ -568,8 +582,10 @@ public class RabbitMqConsumer : BackgroundService
     {
         _logger.LogInformation("Stopping RabbitMQ consumer for queue: {Queue}", _queueName);
 
-        _channel?.Close();
-        _connection?.Close();
+        if (_channel != null)
+            await _channel.CloseAsync(cancellationToken);
+        if (_connection != null)
+            await _connection.CloseAsync(cancellationToken);
 
         await base.StopAsync(cancellationToken);
     }

@@ -295,6 +295,6 @@ public class SqlitePersistenceTests
         results.Should().OnlyHaveUniqueItems(x => x.Name);
 
         var allIntegrations = await repository.GetAllActiveAsync();
-        allIntegrations.Should().HaveCountGreaterOrEqualTo(10);
+        allIntegrations.Should().HaveCountGreaterThanOrEqualTo(10);
     }
 }

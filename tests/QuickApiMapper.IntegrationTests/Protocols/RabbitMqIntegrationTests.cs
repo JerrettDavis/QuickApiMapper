@@ -74,17 +74,17 @@ public class RabbitMqIntegrationTests
         {
             try
             {
-                using var connection = _connectionFactory.CreateConnection();
-                using var channel = connection.CreateModel();
+                using var connection = _connectionFactory.CreateConnectionAsync().GetAwaiter().GetResult();
+                using var channel = connection.CreateChannelAsync().GetAwaiter().GetResult();
 
                 // Delete test queues
-                try { channel.QueueDelete("test-queue-json"); } catch { }
-                try { channel.QueueDelete("test-queue-xml"); } catch { }
-                try { channel.QueueDelete("test-exchange-queue"); } catch { }
-                try { channel.QueueDelete("test-consumer-queue"); } catch { }
-                try { channel.QueueDelete("test-consumer-queue.dead-letter"); } catch { }
-                try { channel.ExchangeDelete("test-consumer-queue.dlx"); } catch { }
-                try { channel.ExchangeDelete("test-exchange"); } catch { }
+                try { channel.QueueDeleteAsync("test-queue-json").GetAwaiter().GetResult(); } catch { }
+                try { channel.QueueDeleteAsync("test-queue-xml").GetAwaiter().GetResult(); } catch { }
+                try { channel.QueueDeleteAsync("test-exchange-queue").GetAwaiter().GetResult(); } catch { }
+                try { channel.QueueDeleteAsync("test-consumer-queue").GetAwaiter().GetResult(); } catch { }
+                try { channel.QueueDeleteAsync("test-consumer-queue.dead-letter").GetAwaiter().GetResult(); } catch { }
+                try { channel.ExchangeDeleteAsync("test-consumer-queue.dlx").GetAwaiter().GetResult(); } catch { }
+                try { channel.ExchangeDeleteAsync("test-exchange").GetAwaiter().GetResult(); } catch { }
             }
             catch
             {
@@ -143,10 +143,10 @@ public class RabbitMqIntegrationTests
             CancellationToken.None);
 
         // Assert - Read message from queue
-        using var connection = _connectionFactory!.CreateConnection();
-        using var channel = connection.CreateModel();
+        await using var connection = await _connectionFactory!.CreateConnectionAsync();
+        await using var channel = await connection.CreateChannelAsync();
 
-        var result = channel.BasicGet(queueName, autoAck: true);
+        var result = await channel.BasicGetAsync(queueName, autoAck: true);
         result.Should().NotBeNull("message should be in queue");
 
         var messageBody = Encoding.UTF8.GetString(result!.Body.ToArray());
@@ -188,10 +188,10 @@ public class RabbitMqIntegrationTests
             CancellationToken.None);
 
         // Assert
-        using var connection = _connectionFactory!.CreateConnection();
-        using var channel = connection.CreateModel();
+        await using var connection = await _connectionFactory!.CreateConnectionAsync();
+        await using var channel = await connection.CreateChannelAsync();
 
-        var result = channel.BasicGet(queueName, autoAck: true);
+        var result = await channel.BasicGetAsync(queueName, autoAck: true);
         result.Should().NotBeNull();
 
         var messageBody = Encoding.UTF8.GetString(result!.Body.ToArray());
@@ -211,12 +211,12 @@ public class RabbitMqIntegrationTests
         var handler = _serviceProvider!.GetRequiredService<RabbitMqDestinationHandler>();
 
         // Setup exchange and queue binding
-        using (var connection = _connectionFactory!.CreateConnection())
-        using (var channel = connection.CreateModel())
+        await using (var connection = await _connectionFactory!.CreateConnectionAsync())
         {
-            channel.ExchangeDeclare(exchangeName, ExchangeType.Topic, durable: true);
-            channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false);
-            channel.QueueBind(queueName, exchangeName, routingKey);
+            await using var channel = await connection.CreateChannelAsync();
+            await channel.ExchangeDeclareAsync(exchangeName, ExchangeType.Topic, durable: true);
+            await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
+            await channel.QueueBindAsync(queueName, exchangeName, routingKey);
         }
 
         var integration = CreateIntegrationMapping(
@@ -242,10 +242,10 @@ public class RabbitMqIntegrationTests
             CancellationToken.None);
 
         // Assert - Message should be routed to bound queue
-        using var readConnection = _connectionFactory!.CreateConnection();
-        using var readChannel = readConnection.CreateModel();
+        await using var readConnection = await _connectionFactory!.CreateConnectionAsync();
+        await using var readChannel = await readConnection.CreateChannelAsync();
 
-        var result = readChannel.BasicGet(queueName, autoAck: true);
+        var result = await readChannel.BasicGetAsync(queueName, autoAck: true);
         result.Should().NotBeNull("message should be routed to queue");
 
         var messageBody = Encoding.UTF8.GetString(result!.Body.ToArray());
@@ -288,17 +288,17 @@ public class RabbitMqIntegrationTests
             CancellationToken.None);
 
         // Assert
-        using var connection = _connectionFactory!.CreateConnection();
-        using var channel = connection.CreateModel();
+        await using var connection = await _connectionFactory!.CreateConnectionAsync();
+        await using var channel = await connection.CreateChannelAsync();
 
-        var result = channel.BasicGet(queueName, autoAck: true);
+        var result = await channel.BasicGetAsync(queueName, autoAck: true);
         result.Should().NotBeNull();
 
         result!.BasicProperties.Headers.Should().ContainKey("X-Source-System");
         result.BasicProperties.Headers.Should().ContainKey("X-Version");
 
-        var sourceSystem = Encoding.UTF8.GetString((byte[])result.BasicProperties.Headers["X-Source-System"]);
-        var version = Encoding.UTF8.GetString((byte[])result.BasicProperties.Headers["X-Version"]);
+        var sourceSystem = Encoding.UTF8.GetString((byte[])result.BasicProperties.Headers!["X-Source-System"]!);
+        var version = Encoding.UTF8.GetString((byte[])result.BasicProperties.Headers!["X-Version"]!);
 
         sourceSystem.Should().Be("QuickApiMapper");
         version.Should().Be("1.0");
@@ -317,32 +317,30 @@ public class RabbitMqIntegrationTests
         using var consumer = new RabbitMqConsumer(logger, _serviceProvider!, _connectionFactory!, queueName);
 
         // Publish test message to the queue created by consumer
-        using (var connection = _connectionFactory!.CreateConnection())
-        using (var channel = connection.CreateModel())
+        await using var publishConn = await _connectionFactory!.CreateConnectionAsync();
+        await using var publishCh = await publishConn.CreateChannelAsync();
         {
             var body = Encoding.UTF8.GetBytes(@"{""testId"": 999}");
-            var properties = channel.CreateBasicProperties();
-            properties.Persistent = true;
-            properties.ContentType = "application/json";
+            var properties = new BasicProperties { Persistent = true, ContentType = "application/json" };
 
-            channel.BasicPublish(string.Empty, queueName, properties, body);
+            await publishCh.BasicPublishAsync(string.Empty, queueName, mandatory: false, basicProperties: properties, body: body);
         }
 
         // Subscribe to message events (simplified - in production would use the worker's internal processing)
-        using var testConnection = _connectionFactory!.CreateConnection();
-        using var testChannel = testConnection.CreateModel();
+        await using var testConnection = await _connectionFactory!.CreateConnectionAsync();
+        await using var testChannel = await testConnection.CreateChannelAsync();
 
-        var testConsumer = new EventingBasicConsumer(testChannel);
-        testConsumer.Received += (model, ea) =>
+        var testConsumer = new AsyncEventingBasicConsumer(testChannel);
+        testConsumer.ReceivedAsync += async (model, ea) =>
         {
             var body = ea.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
             receivedMessages.Add(message);
-            testChannel.BasicAck(ea.DeliveryTag, false);
+            await testChannel.BasicAckAsync(ea.DeliveryTag, false);
             messageReceivedEvent.Set();
         };
 
-        testChannel.BasicConsume(queueName, autoAck: false, testConsumer);
+        await testChannel.BasicConsumeAsync(queueName, autoAck: false, testConsumer);
 
         // Wait for message
         var received = messageReceivedEvent.Wait(TimeSpan.FromSeconds(10));

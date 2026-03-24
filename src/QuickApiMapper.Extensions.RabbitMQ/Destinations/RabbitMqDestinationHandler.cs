@@ -68,56 +68,63 @@ public class RabbitMqDestinationHandler : IDestinationHandler
             // Format: rabbitmq://exchange/routingkey or rabbitmq://queue
             var (exchangeName, routingKey, queueName) = ParseDestinationUrl(integration.DestinationUrl);
 
-            using var connection = _connectionFactory.CreateConnection();
-            using var channel = connection.CreateModel();
+            await using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
+            await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
             // If publishing to a queue directly, declare it
             if (!string.IsNullOrEmpty(queueName))
             {
-                channel.QueueDeclare(
+                await channel.QueueDeclareAsync(
                     queue: queueName,
                     durable: true,
                     exclusive: false,
                     autoDelete: false,
-                    arguments: null);
+                    arguments: null,
+                    cancellationToken: cancellationToken);
             }
 
             // Prepare message
             var body = Encoding.UTF8.GetBytes(messageBody);
-            var properties = channel.CreateBasicProperties();
-            properties.Persistent = true;
-            properties.ContentType = contentType;
-            properties.MessageId = Guid.NewGuid().ToString();
-            properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            var properties = new BasicProperties
+            {
+                Persistent = true,
+                ContentType = contentType,
+                MessageId = Guid.NewGuid().ToString(),
+                Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+            };
 
             // Add custom headers from static values
             if (integration.StaticValues != null && integration.StaticValues.Any())
             {
                 properties.Headers = integration.StaticValues.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => (object)kvp.Value);
+                    kvp => (object?)kvp.Value);
             }
 
             // Publish message
             if (!string.IsNullOrEmpty(queueName))
             {
                 // Publish directly to queue
-                channel.BasicPublish(
+                await channel.BasicPublishAsync(
                     exchange: string.Empty,
                     routingKey: queueName,
+                    mandatory: false,
                     basicProperties: properties,
-                    body: body);
+                    body: body,
+                    cancellationToken: cancellationToken);
 
                 _logger.LogInformation("Published message to RabbitMQ queue: {Queue}", queueName);
             }
             else
             {
                 // Publish to exchange
-                channel.BasicPublish(
+                await channel.BasicPublishAsync(
                     exchange: exchangeName,
                     routingKey: routingKey,
+                    mandatory: false,
                     basicProperties: properties,
-                    body: body);
+                    body: body,
+                    cancellationToken: cancellationToken);
 
                 _logger.LogInformation("Published message to RabbitMQ exchange: {Exchange} with routing key: {RoutingKey}",
                     exchangeName, routingKey);
