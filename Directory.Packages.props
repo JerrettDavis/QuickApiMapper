@@ -35,8 +35,8 @@
     <PackageVersion Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
     <!-- RabbitMQ -->
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.1" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.1" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.2" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
@@ -55,7 +55,7 @@
     <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.2.2" />
     <!-- Test Packages -->
     <PackageVersion Include="coverlet.collector" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="NUnit" Version="4.5.1" />
     <PackageVersion Include="NUnit.Analyzers" Version="4.12.0" />
@@ -66,8 +66,8 @@
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <!-- Web Packages -->
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.13.20" />
-    <PackageVersion Include="MudBlazor" Version="9.2.0" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.13.22" />
+    <PackageVersion Include="MudBlazor" Version="9.3.0" />
     <!-- SOAP Packages -->
     <PackageVersion Include="SoapCore" Version="1.2.1.12" />
   </ItemGroup>
