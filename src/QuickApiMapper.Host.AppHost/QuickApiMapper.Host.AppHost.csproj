@@ -25,6 +25,7 @@
   <PackageReference Include="Google.Protobuf" />
   <PackageReference Include="Grpc.AspNetCore" />
   <PackageReference Include="Grpc.Tools" />
+  <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
   <PackageReference Include="Microsoft.Extensions.Configuration" />
   <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
   <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
