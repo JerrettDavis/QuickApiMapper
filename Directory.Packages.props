@@ -50,9 +50,9 @@
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />
     <!-- Aspire Packages -->
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.3.0" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.3.0" />
-    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.3.0" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.3.3" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.3.3" />
+    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.3.3" />
     <!-- Test Packages -->
     <PackageVersion Include="coverlet.collector" Version="10.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
