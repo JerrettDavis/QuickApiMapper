@@ -15,6 +15,15 @@ public sealed class BehaviorPipeline(
     ILogger<BehaviorPipeline> logger
 )
 {
+    private readonly AsyncActionChain<MappingContext> _preRunChain =
+        BuildPreRunChain(preRunBehaviors.OrderBy(b => b.Order).ToArray(), logger);
+
+    private readonly AsyncActionChain<PostRunBehaviorExecutionState> _postRunChain =
+        BuildPostRunChain(postRunBehaviors.OrderBy(b => b.Order).ToArray(), logger);
+
+    private readonly AsyncActionChain<BehaviorExecutionState> _wholeRunChain =
+        BuildWholeRunChain(wholeRunBehaviors.OrderBy(b => b.Order).ToArray(), logger);
+
     /// <summary>
     /// Executes the complete behavior pipeline around the core mapping logic.
     /// </summary>
@@ -66,9 +75,33 @@ public sealed class BehaviorPipeline(
         Func<MappingContext, Task<ContractsMappingResult>> coreLogic)
     {
         var state = new BehaviorExecutionState(context, coreLogic);
+
+        await _wholeRunChain.ExecuteAsync(state, context.CancellationToken).ConfigureAwait(false);
+
+        return state.Result ?? CreateMissingResultFailure();
+    }
+
+    private async Task ExecutePreRunBehaviors(MappingContext context)
+    {
+        await _preRunChain.ExecuteAsync(context, context.CancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task ExecutePostRunBehaviors(
+        MappingContext context,
+        ContractsMappingResult result)
+    {
+        var state = new PostRunBehaviorExecutionState(context, result);
+
+        await _postRunChain.ExecuteAsync(state, context.CancellationToken).ConfigureAwait(false);
+    }
+
+    private static AsyncActionChain<BehaviorExecutionState> BuildWholeRunChain(
+        IReadOnlyList<IWholeRunBehavior> behaviors,
+        ILogger logger)
+    {
         var builder = AsyncActionChain<BehaviorExecutionState>.Create();
 
-        foreach (var behavior in wholeRunBehaviors.OrderBy(b => b.Order))
+        foreach (var behavior in behaviors)
         {
             builder.Use(async (current, ct, next) =>
             {
@@ -98,16 +131,16 @@ public sealed class BehaviorPipeline(
             current.Result = await current.CoreLogic(current.Context).ConfigureAwait(false);
         });
 
-        await builder.Build().ExecuteAsync(state, context.CancellationToken).ConfigureAwait(false);
-
-        return state.Result ?? CreateMissingResultFailure();
+        return builder.Build();
     }
 
-    private async Task ExecutePreRunBehaviors(MappingContext context)
+    private static AsyncActionChain<MappingContext> BuildPreRunChain(
+        IReadOnlyList<IPreRunBehavior> behaviors,
+        ILogger logger)
     {
         var builder = AsyncActionChain<MappingContext>.Create();
 
-        foreach (var behavior in preRunBehaviors.OrderBy(b => b.Order))
+        foreach (var behavior in behaviors)
         {
             builder.Use(async (current, ct, next) =>
             {
@@ -128,17 +161,16 @@ public sealed class BehaviorPipeline(
             });
         }
 
-        await builder.Build().ExecuteAsync(context, context.CancellationToken).ConfigureAwait(false);
+        return builder.Build();
     }
 
-    private async Task ExecutePostRunBehaviors(
-        MappingContext context,
-        ContractsMappingResult result)
+    private static AsyncActionChain<PostRunBehaviorExecutionState> BuildPostRunChain(
+        IReadOnlyList<IPostRunBehavior> behaviors,
+        ILogger logger)
     {
-        var state = new PostRunBehaviorExecutionState(context, result);
         var builder = AsyncActionChain<PostRunBehaviorExecutionState>.Create();
 
-        foreach (var behavior in postRunBehaviors.OrderBy(b => b.Order))
+        foreach (var behavior in behaviors)
         {
             builder.Use(async (current, ct, next) =>
             {
@@ -158,7 +190,7 @@ public sealed class BehaviorPipeline(
             });
         }
 
-        await builder.Build().ExecuteAsync(state, context.CancellationToken).ConfigureAwait(false);
+        return builder.Build();
     }
 
     private static ContractsMappingResult CreateMissingResultFailure()
