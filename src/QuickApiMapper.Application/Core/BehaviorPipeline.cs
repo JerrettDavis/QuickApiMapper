@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using PatternKit.Behavioral.Chain;
 using QuickApiMapper.Contracts;
 using ContractsMappingResult = QuickApiMapper.Contracts.MappingResult;
 
@@ -24,163 +25,167 @@ public sealed class BehaviorPipeline(
         MappingContext context,
         Func<MappingContext, Task<ContractsMappingResult>> coreLogic)
     {
-        // Build the complete pipeline: PreRun -> WholeRun -> Core -> PostRun
-        var pipeline = BuildCompletePipeline(coreLogic);
-
-        // Execute the complete pipeline (exceptions from PreRun behaviors will propagate)
-        var result = await pipeline(context);
+        await ExecutePreRunBehaviors(context);
+        var result = await ExecuteWholeRunWithPostRunBehaviors(context, coreLogic);
 
         logger.LogInformation("Behavior pipeline execution completed. Success: {Success}", result.IsSuccess);
         return result;
     }
 
-    /// <summary>
-    /// Builds the complete pipeline: PreRun -> WholeRun -> Core -> PostRun
-    /// </summary>
-    private Func<MappingContext, Task<ContractsMappingResult>> BuildCompletePipeline(
+    private async Task<ContractsMappingResult> ExecuteWholeRunWithPostRunBehaviors(
+        MappingContext context,
         Func<MappingContext, Task<ContractsMappingResult>> coreLogic)
     {
-        
-        var wholeRunPipeline = BuildWholeRunPipeline(coreLogic);
-        var wholeRunWithPost = BuildCoreWithPostRun(wholeRunPipeline);
-
-        return BuildPreRunPipeline(wholeRunWithPost);
-    }
-
-    /// <summary>
-    /// Builds the PreRun behavior pipeline chain.
-    /// </summary>
-    private Func<MappingContext, Task<ContractsMappingResult>> BuildPreRunPipeline(
-        Func<MappingContext, Task<ContractsMappingResult>> next)
-    {
-        return async context =>
+        try
         {
-            // Execute PreRun behaviors first (let exceptions propagate for fail-fast scenarios)
-            await ExecutePreRunBehaviors(context);
+            var result = await ExecuteWholeRunBehaviors(context, coreLogic);
 
-            // Then execute the rest of the pipeline
-            return await next(context);
-        };
+            await ExecutePostRunBehaviors(context, result);
+
+            return result;
+        }
+        catch (Exception ex) when (IsNonFatalPipelineException(ex))
+        {
+            var failureResult = ContractsMappingResult.Failure("Core mapping logic failed", ex);
+
+            try
+            {
+                await ExecutePostRunBehaviors(context, failureResult);
+            }
+            catch (Exception postRunEx) when (IsNonFatalPipelineException(postRunEx))
+            {
+                logger.LogError(postRunEx, "PostRun behavior execution failed after core logic failure");
+            }
+
+            return failureResult;
+        }
     }
 
-    /// <summary>
-    /// Builds the WholeRun behavior pipeline chain.
-    /// </summary>
-    private Func<MappingContext, Task<ContractsMappingResult>> BuildWholeRunPipeline(
+    private async Task<ContractsMappingResult> ExecuteWholeRunBehaviors(
+        MappingContext context,
         Func<MappingContext, Task<ContractsMappingResult>> coreLogic)
     {
-        // Get ordered WholeRun behaviors
-        var orderedBehaviors = wholeRunBehaviors
-            .OrderBy(b => b.Order)
-            .ToList();
+        var state = new BehaviorExecutionState(context, coreLogic);
+        var builder = AsyncActionChain<BehaviorExecutionState>.Create();
 
-        // Build the pipeline from right to left (last behavior wraps the core logic)
-        var pipeline = coreLogic;
-
-        // Wrap with WholeRun behaviors in reverse order
-        for (var i = orderedBehaviors.Count - 1; i >= 0; i--)
+        foreach (var behavior in wholeRunBehaviors.OrderBy(b => b.Order))
         {
-            var behavior = orderedBehaviors[i];
-            var next = pipeline; // Capture the current pipeline
-
-            pipeline = async context =>
+            builder.Use(async (current, ct, next) =>
             {
                 logger.LogDebug("Executing WholeRun behavior: {BehaviorName}", behavior.Name);
-                return await behavior.ExecuteAsync(context, next);
-            };
+                current.Result = await behavior.ExecuteAsync(current.Context, ContinueAsync).ConfigureAwait(false);
+
+                async Task<ContractsMappingResult> ContinueAsync(MappingContext nextContext)
+                {
+                    var previousContext = current.Context;
+                    current.Context = nextContext;
+
+                    try
+                    {
+                        await next(current, ct).ConfigureAwait(false);
+                        return current.Result ?? CreateMissingResultFailure();
+                    }
+                    finally
+                    {
+                        current.Context = previousContext;
+                    }
+                }
+            });
         }
 
-        return pipeline;
-    }
-
-    /// <summary>
-    /// Builds the core logic wrapped with PostRun behaviors.
-    /// </summary>
-    private Func<MappingContext, Task<ContractsMappingResult>> BuildCoreWithPostRun(
-        Func<MappingContext, Task<ContractsMappingResult>> coreLogic)
-    {
-        return async context =>
+        builder.Finally(async (current, _) =>
         {
-            try
-            {
-                // Execute core logic
-                var result = await coreLogic(context);
+            current.Result = await current.CoreLogic(current.Context).ConfigureAwait(false);
+        });
 
-                // Execute PostRun behaviors
-                await ExecutePostRunBehaviors(context, result);
+        await builder.Build().ExecuteAsync(state, context.CancellationToken).ConfigureAwait(false);
 
-                return result;
-            }
-            catch (Exception ex)
-            {
-                var failureResult = ContractsMappingResult.Failure("Core mapping logic failed", ex);
-
-                // Still try to execute PostRun behaviors even if core logic failed
-                try
-                {
-                    await ExecutePostRunBehaviors(context, failureResult);
-                }
-                catch (Exception postRunEx)
-                {
-                    logger.LogError(postRunEx, "PostRun behavior execution failed after core logic failure");
-                }
-
-                return failureResult;
-            }
-        };
+        return state.Result ?? CreateMissingResultFailure();
     }
 
-
-    /// <summary>
-    /// Executes all PreRun behaviors in order.
-    /// </summary>
     private async Task ExecutePreRunBehaviors(MappingContext context)
     {
-        var orderedBehaviors = preRunBehaviors
-            .OrderBy(b => b.Order)
-            .ToList();
+        var builder = AsyncActionChain<MappingContext>.Create();
 
-        foreach (var behavior in orderedBehaviors)
+        foreach (var behavior in preRunBehaviors.OrderBy(b => b.Order))
         {
-            logger.LogDebug("Executing PreRun behavior: {BehaviorName}", behavior.Name);
+            builder.Use(async (current, ct, next) =>
+            {
+                logger.LogDebug("Executing PreRun behavior: {BehaviorName}", behavior.Name);
 
-            try
-            {
-                await behavior.ExecuteAsync(context);
-                logger.LogDebug("PreRun behavior completed successfully: {BehaviorName}", behavior.Name);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "PreRun behavior failed: {BehaviorName}", behavior.Name);
-                throw;
-            }
+                try
+                {
+                    await behavior.ExecuteAsync(current).ConfigureAwait(false);
+                    logger.LogDebug("PreRun behavior completed successfully: {BehaviorName}", behavior.Name);
+                }
+                catch (Exception ex) when (IsNonFatalPipelineException(ex))
+                {
+                    logger.LogError(ex, "PreRun behavior failed: {BehaviorName}", behavior.Name);
+                    throw;
+                }
+
+                await next(current, ct).ConfigureAwait(false);
+            });
         }
+
+        await builder.Build().ExecuteAsync(context, context.CancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Executes all PostRun behaviors in order.
-    /// </summary>
     private async Task ExecutePostRunBehaviors(
-        MappingContext context, 
+        MappingContext context,
         ContractsMappingResult result)
     {
-        var orderedBehaviors = postRunBehaviors
-            .OrderBy(b => b.Order)
-            .ToList();
+        var state = new PostRunBehaviorExecutionState(context, result);
+        var builder = AsyncActionChain<PostRunBehaviorExecutionState>.Create();
 
-        foreach (var behavior in orderedBehaviors)
+        foreach (var behavior in postRunBehaviors.OrderBy(b => b.Order))
         {
-            logger.LogDebug("Executing PostRun behavior: {BehaviorName}", behavior.Name);
+            builder.Use(async (current, ct, next) =>
+            {
+                logger.LogDebug("Executing PostRun behavior: {BehaviorName}", behavior.Name);
 
-            try
-            {
-                await behavior.ExecuteAsync(context, result);
-                logger.LogDebug("PostRun behavior completed successfully: {BehaviorName}", behavior.Name);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "PostRun behavior failed: {BehaviorName}", behavior.Name);
-            }
+                try
+                {
+                    await behavior.ExecuteAsync(current.Context, current.Result).ConfigureAwait(false);
+                    logger.LogDebug("PostRun behavior completed successfully: {BehaviorName}", behavior.Name);
+                }
+                catch (Exception ex) when (IsNonFatalPipelineException(ex))
+                {
+                    logger.LogError(ex, "PostRun behavior failed: {BehaviorName}", behavior.Name);
+                }
+
+                await next(current, ct).ConfigureAwait(false);
+            });
         }
+
+        await builder.Build().ExecuteAsync(state, context.CancellationToken).ConfigureAwait(false);
+    }
+
+    private static ContractsMappingResult CreateMissingResultFailure()
+        => ContractsMappingResult.Failure("Behavior pipeline completed without producing a mapping result");
+
+    private static bool IsNonFatalPipelineException(Exception exception)
+        => exception is not OperationCanceledException
+            and not OutOfMemoryException
+            and not StackOverflowException
+            and not AccessViolationException
+            and not AppDomainUnloadedException
+            and not BadImageFormatException;
+
+    private sealed class BehaviorExecutionState(
+        MappingContext context,
+        Func<MappingContext, Task<ContractsMappingResult>> coreLogic)
+    {
+        public MappingContext Context { get; set; } = context;
+        public Func<MappingContext, Task<ContractsMappingResult>> CoreLogic { get; } = coreLogic;
+        public ContractsMappingResult? Result { get; set; }
+    }
+
+    private sealed class PostRunBehaviorExecutionState(
+        MappingContext context,
+        ContractsMappingResult result)
+    {
+        public MappingContext Context { get; } = context;
+        public ContractsMappingResult Result { get; } = result;
     }
 }

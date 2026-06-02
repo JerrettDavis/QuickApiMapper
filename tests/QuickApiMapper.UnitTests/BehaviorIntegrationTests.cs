@@ -438,6 +438,36 @@ public sealed class BehaviorIntegrationTests : IDisposable
         });
     }
 
+    [Test]
+    public async Task Pipeline_WithShortCircuitingWholeRunBehavior_ShouldStillExecutePostRun()
+    {
+        // Arrange
+        var executionOrder = new List<string>();
+        var postRunBehavior = new TestPostRunBehavior(executionOrder);
+        var shortCircuitBehavior = new TestShortCircuitWholeRunBehavior(executionOrder);
+
+        var pipeline = _behaviorCollection
+            .AddWholeRunBehavior(shortCircuitBehavior)
+            .AddPostRunBehavior(postRunBehavior)
+            .BuildPipeline(_serviceProvider);
+
+        var context = CreateMappingContext();
+
+        // Act
+        var result = await pipeline.ExecuteAsync(context, _ =>
+        {
+            executionOrder.Add("Core");
+            return Task.FromResult(MappingResult.Success());
+        });
+
+        Assert.Multiple(() =>
+        {
+            // Assert
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(executionOrder, Is.EqualTo(new[] { "ShortCircuit", "PostRun" }));
+        });
+    }
+
     private class TestPreRunBehavior(
         List<string> executionOrder
     ) :
@@ -487,6 +517,21 @@ public sealed class BehaviorIntegrationTests : IDisposable
             var result = await next(context);
             executionOrder.Add($"{name}-End");
             return result;
+        }
+    }
+
+    private class TestShortCircuitWholeRunBehavior(
+        List<string> executionOrder
+    ) :
+        IWholeRunBehavior
+    {
+        public string Name => "TestShortCircuit";
+        public int Order => 10;
+
+        public Task<MappingResult> ExecuteAsync(MappingContext context, Func<MappingContext, Task<MappingResult>> next)
+        {
+            executionOrder.Add("ShortCircuit");
+            return Task.FromResult(MappingResult.Success());
         }
     }
 
