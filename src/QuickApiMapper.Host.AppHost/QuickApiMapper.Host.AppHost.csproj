@@ -22,6 +22,8 @@
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.Redis" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" />
+    <PackageReference Include="MessagePack" />
+    <PackageReference Include="MessagePack.Annotations" />
   <PackageReference Include="Google.Protobuf" />
   <PackageReference Include="Grpc.AspNetCore" />
   <PackageReference Include="Grpc.Tools" />
