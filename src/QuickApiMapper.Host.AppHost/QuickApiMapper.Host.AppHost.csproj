@@ -33,6 +33,8 @@
   <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   <PackageReference Include="Microsoft.Extensions.Hosting" />
   <PackageReference Include="Microsoft.Extensions.Http" />
+  <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+  <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
   <PackageReference Include="RabbitMQ.Client" />
   </ItemGroup>
 
