@@ -15,6 +15,9 @@
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
     <PackageReference Include="AspNetCore.HealthChecks.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <!-- Explicit reference overrides the transitive SQLitePCLRaw.lib.e_sqlite3 2.1.11
+         (vulnerable per GHSA-2m69-gcr7-jv3q) pulled in via bundle_e_sqlite3. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
   </ItemGroup>
 
   <ItemGroup>
