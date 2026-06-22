@@ -50,6 +50,11 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+    <!-- SQLitePCLRaw native binary override — pins transitive lib.e_sqlite3 to 3.50.3
+         to clear GHSA-2m69-gcr7-jv3q (high severity vuln in 2.1.11 native binary).
+         Microsoft.EntityFrameworkCore.Sqlite 10.0.9 pulls in SQLitePCLRaw.bundle_e_sqlite3 2.1.11
+         which pins lib.e_sqlite3 to 2.1.11; this entry raises the floor to the patched version. -->
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
     <!-- Aspire Packages -->
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.4" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="13.4.4" />
