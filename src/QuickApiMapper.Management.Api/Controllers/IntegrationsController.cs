@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuickApiMapper.Management.Contracts.Models;
 using QuickApiMapper.Management.Api.Services;
@@ -10,6 +11,7 @@ namespace QuickApiMapper.Management.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize]
 public class IntegrationsController : ControllerBase
 {
     private readonly IIntegrationService _integrationService;

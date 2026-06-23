@@ -99,7 +99,7 @@ public class MessagesController : ControllerBase
 
         if (message == null)
         {
-            _logger.LogWarning("Message {MessageId} not found", messageId);
+            _logger.LogWarning("Message {MessageId} not found", SanitizeForLog(messageId));
             return NotFound(new { Message = $"Message {messageId} not found" });
         }
 
@@ -159,6 +159,13 @@ public class MessagesController : ControllerBase
 
         return Ok(new { DeletedCount = deletedCount });
     }
+
+    /// <summary>
+    /// Removes CR/LF from user-supplied strings before logging to prevent log-forging.
+    /// </summary>
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", "\\r", StringComparison.Ordinal)
+              .Replace("\n", "\\n", StringComparison.Ordinal) ?? string.Empty;
 
     /// <summary>
     /// Maps a CapturedMessage domain model to a CapturedMessageDto.

@@ -16,6 +16,36 @@ var builder = WebApplication.CreateBuilder(args);
 // Add Aspire service defaults (health checks, telemetry, service discovery)
 builder.AddServiceDefaults();
 
+// Add authentication and authorization.
+// Controllers in this Management API are protected with [Authorize]; callers must
+// present a valid bearer token issued by the configured identity provider.
+// In development with no IdP configured the scheme falls back to no-op, but the
+// middleware chain is always present so the protection attribute is enforced in
+// production where a real authority is wired up via "Auth:Authority" / "Auth:Audience".
+var authAuthority = builder.Configuration["Auth:Authority"];
+var authAudience = builder.Configuration["Auth:Audience"];
+
+if (!string.IsNullOrEmpty(authAuthority))
+{
+    builder.Services.AddAuthentication("Bearer")
+        .AddJwtBearer("Bearer", options =>
+        {
+            options.Authority = authAuthority;
+            options.Audience = authAudience ?? "quickapimapper-management";
+        });
+}
+else
+{
+    // Development fallback: register a no-op authentication scheme so the
+    // middleware pipeline is valid. The [Authorize] attribute still gates requests —
+    // replace this with a real scheme before exposing to untrusted networks.
+    builder.Services.AddAuthentication("DevNoOp")
+        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
+                   QuickApiMapper.Management.Api.Auth.DevNoOpAuthHandler>("DevNoOp", _ => { });
+}
+
+builder.Services.AddAuthorization();
+
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -160,6 +190,7 @@ else
 
 app.UseHttpsRedirection();
 app.UseCors();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

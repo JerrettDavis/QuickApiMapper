@@ -20,7 +20,7 @@ public class WarehouseService : IWarehouseService
 
     public async Task<SubmitFulfillmentResponse> SubmitFulfillmentRequest(SubmitFulfillmentRequest request)
     {
-        _logger.LogInformation("Received fulfillment request for order {OrderNumber}", request.OrderNumber);
+        _logger.LogInformation("Received fulfillment request for order {OrderNumber}", SanitizeForLog(request.OrderNumber));
 
         try
         {
@@ -94,7 +94,7 @@ public class WarehouseService : IWarehouseService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing fulfillment request for order {OrderNumber}", request.OrderNumber);
+            _logger.LogError(ex, "Error processing fulfillment request for order {OrderNumber}", SanitizeForLog(request.OrderNumber));
             return new SubmitFulfillmentResponse
             {
                 Success = false,
@@ -109,7 +109,7 @@ public class WarehouseService : IWarehouseService
     public async Task<GetFulfillmentStatusResponse> GetFulfillmentStatus(GetFulfillmentStatusRequest request)
     {
         _logger.LogInformation("Status query for Order: {OrderNumber}, Confirmation: {ConfirmationNumber}",
-            request.OrderNumber, request.ConfirmationNumber);
+            SanitizeForLog(request.OrderNumber), SanitizeForLog(request.ConfirmationNumber));
 
         try
         {
@@ -170,7 +170,7 @@ public class WarehouseService : IWarehouseService
     public async Task<CancelFulfillmentResponse> CancelFulfillment(CancelFulfillmentRequest request)
     {
         _logger.LogInformation("Cancellation request for Order: {OrderNumber}, Confirmation: {ConfirmationNumber}",
-            request.OrderNumber, request.ConfirmationNumber);
+            SanitizeForLog(request.OrderNumber), SanitizeForLog(request.ConfirmationNumber));
 
         try
         {
@@ -300,4 +300,11 @@ public class WarehouseService : IWarehouseService
             record.DeliveredDateTime = record.ShippedDateTime?.AddDays(deliveryDays);
         }
     }
+
+    /// <summary>
+    /// Removes CR/LF from user-supplied strings before logging to prevent log-forging.
+    /// </summary>
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", "\\r", StringComparison.Ordinal)
+              .Replace("\n", "\\n", StringComparison.Ordinal) ?? string.Empty;
 }

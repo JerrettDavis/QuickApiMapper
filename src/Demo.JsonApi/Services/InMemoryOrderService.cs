@@ -32,7 +32,7 @@ public class InMemoryOrderService : IOrderService
             throw new InvalidOperationException($"Order with ID {order.OrderId} already exists");
         }
 
-        _logger.LogInformation("Created new order: {OrderId}", order.OrderId);
+        _logger.LogInformation("Created new order: {OrderId}", SanitizeForLog(order.OrderId));
         return Task.FromResult(order);
     }
 
@@ -55,7 +55,7 @@ public class InMemoryOrderService : IOrderService
         }
 
         order.Status = status;
-        _logger.LogInformation("Updated order {OrderId} status to {Status}", orderId, status);
+        _logger.LogInformation("Updated order {OrderId} status to {Status}", SanitizeForLog(orderId), status);
         return Task.FromResult<Order?>(order);
     }
 
@@ -330,4 +330,11 @@ public class InMemoryOrderService : IOrderService
         var random = Random.Shared.Next(1000, 9999);
         return $"ORD-{timestamp:yyyy}-{random}";
     }
+
+    /// <summary>
+    /// Removes CR/LF from user-supplied strings before logging to prevent log-forging.
+    /// </summary>
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", "\\r", StringComparison.Ordinal)
+              .Replace("\n", "\\n", StringComparison.Ordinal) ?? string.Empty;
 }
