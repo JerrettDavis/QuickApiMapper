@@ -120,7 +120,7 @@ app.MapPut("/api/orders/{id}/status", async (
     if (!string.IsNullOrWhiteSpace(statusUpdate.Notes))
     {
         logger.LogInformation("Order {OrderId} status updated to {Status}. Notes: {Notes}",
-            id, statusUpdate.Status, SanitizeForLog(statusUpdate.Notes));
+            SanitizeForLog(id), statusUpdate.Status, SanitizeForLog(statusUpdate.Notes));
     }
 
     return Results.Ok(order);
