@@ -38,7 +38,7 @@ public class InMemoryFulfillmentRepository : IFulfillmentRepository
         _orderToConfirmationMap[record.OrderNumber] = record.ConfirmationNumber;
 
         _logger.LogDebug("Added fulfillment {ConfirmationNumber} for order {OrderNumber}",
-            record.ConfirmationNumber, record.OrderNumber);
+            SanitizeForLog(record.ConfirmationNumber), SanitizeForLog(record.OrderNumber));
 
         return Task.CompletedTask;
     }
@@ -83,4 +83,11 @@ public class InMemoryFulfillmentRepository : IFulfillmentRepository
     {
         return Task.FromResult<IEnumerable<FulfillmentRecord>>(_fulfillmentsByConfirmation.Values.ToList());
     }
+
+    /// <summary>
+    /// Removes CR/LF from user-supplied strings before logging to prevent log-forging.
+    /// </summary>
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", "\\r", StringComparison.Ordinal)
+              .Replace("\n", "\\n", StringComparison.Ordinal) ?? string.Empty;
 }

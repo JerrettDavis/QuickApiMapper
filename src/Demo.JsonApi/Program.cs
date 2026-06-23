@@ -120,7 +120,7 @@ app.MapPut("/api/orders/{id}/status", async (
     if (!string.IsNullOrWhiteSpace(statusUpdate.Notes))
     {
         logger.LogInformation("Order {OrderId} status updated to {Status}. Notes: {Notes}",
-            id, statusUpdate.Status, statusUpdate.Notes);
+            id, statusUpdate.Status, SanitizeForLog(statusUpdate.Notes));
     }
 
     return Results.Ok(order);
@@ -153,3 +153,10 @@ app.MapGet("/health", () => Results.Ok(new
 app.MapDefaultEndpoints();
 
 app.Run();
+
+/// <summary>
+/// Removes CR/LF from user-supplied strings before logging to prevent log-forging.
+/// </summary>
+static string SanitizeForLog(string? value) =>
+    value?.Replace("\r", "\\r", StringComparison.Ordinal)
+          .Replace("\n", "\\n", StringComparison.Ordinal) ?? string.Empty;

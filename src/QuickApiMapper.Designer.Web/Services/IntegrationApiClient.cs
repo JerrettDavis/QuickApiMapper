@@ -225,7 +225,7 @@ public class IntegrationApiClient
             var query = string.Join("&", queryParams);
             var url = $"api/messages?{query}";
 
-            _logger.LogInformation("Querying messages from {Url}", url);
+            _logger.LogInformation("Querying messages from {Url}", SanitizeForLog(url));
             return await _httpClient.GetFromJsonAsync<MessagePagedResult>(url);
         }
         catch (Exception ex)
@@ -328,6 +328,13 @@ public class IntegrationApiClient
             return false;
         }
     }
+
+    /// <summary>
+    /// Removes CR/LF from user-supplied strings before logging to prevent log-forging.
+    /// </summary>
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", "\\r", StringComparison.Ordinal)
+              .Replace("\n", "\\n", StringComparison.Ordinal) ?? string.Empty;
 }
 
 // Demo DTO

@@ -107,7 +107,8 @@ async Task<IResult> HandleMappingRequest(
 
         // Read and parse input
         var inputBody = await new StreamReader(request.Body).ReadToEndAsync(cancellationToken);
-        logger.LogDebug("Received input: {Input}", inputBody);
+        // Sanitize before logging to prevent log-forging via newline injection.
+        logger.LogDebug("Received input: {Input}", SanitizeForLog(inputBody));
 
         // Parse input and create appropriate mapping engine based on source and destination types
         var mappingEngineFactory = serviceProvider.GetRequiredService<IMappingEngineFactory>();
@@ -208,6 +209,14 @@ async Task<IResult> HandleMappingRequest(
         return Results.Problem($"Internal server error: {ex.Message}");
     }
 }
+
+/// <summary>
+/// Removes CR/LF characters from user-supplied strings before they reach the log
+/// to prevent log-forging / log-injection attacks.
+/// </summary>
+static string SanitizeForLog(string? value) =>
+    value?.Replace("\r", "\\r", StringComparison.Ordinal)
+          .Replace("\n", "\\n", StringComparison.Ordinal) ?? string.Empty;
 
 XDocument CreateXmlDocument(IntegrationMapping integration)
 {

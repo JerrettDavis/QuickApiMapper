@@ -73,6 +73,8 @@
     <PackageVersion Include="FluentAssertions" Version="8.10.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <!-- Authentication Packages -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(MicrosoftPackageVersion)" />
     <!-- Web Packages -->
     <PackageVersion Include="Scalar.AspNetCore" Version="2.16.4" />
     <PackageVersion Include="MudBlazor" Version="9.5.0" />
