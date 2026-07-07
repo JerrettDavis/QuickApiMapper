@@ -9,6 +9,9 @@
   <ItemGroup>
     <PackageReference Include="SoapCore" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <!-- Explicit reference overrides the transitive Microsoft.OpenApi 2.0.0
+         (vulnerable per GHSA-v5pm-xwqc-g5wc) pulled in via Microsoft.AspNetCore.OpenApi. -->
+    <PackageReference Include="Microsoft.OpenApi" />
   </ItemGroup>
 
   <ItemGroup>
