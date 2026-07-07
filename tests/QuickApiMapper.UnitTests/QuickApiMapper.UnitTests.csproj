@@ -33,6 +33,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- Explicit reference overrides the transitive Microsoft.OpenApi 2.0.0
+             (vulnerable per GHSA-v5pm-xwqc-g5wc) pulled in via QuickApiMapper.Web -> Scalar.AspNetCore. -->
+        <PackageReference Include="Microsoft.OpenApi" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Update="Test_Data\CustomerIntegration\CustomerIntegration-Config.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>

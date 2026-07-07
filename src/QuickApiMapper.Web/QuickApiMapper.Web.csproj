@@ -10,6 +10,9 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
         <PackageReference Include="Newtonsoft.Json" />
         <PackageReference Include="Scalar.AspNetCore" />
+        <!-- Explicit reference overrides the transitive Microsoft.OpenApi 2.0.0
+             (vulnerable per GHSA-v5pm-xwqc-g5wc) pulled in via Scalar.AspNetCore. -->
+        <PackageReference Include="Microsoft.OpenApi" />
     </ItemGroup>
 
     <ItemGroup>

@@ -6,6 +6,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <!-- Explicit reference overrides the transitive Microsoft.OpenApi 2.0.0
+         (vulnerable per GHSA-v5pm-xwqc-g5wc) pulled in via QuickApiMapper.Web -> Scalar.AspNetCore. -->
+    <PackageReference Include="Microsoft.OpenApi" />
     <ProjectReference Include="..\QuickApiMapper.Application\QuickApiMapper.Application.csproj" />
   </ItemGroup>
 
