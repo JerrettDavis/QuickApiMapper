@@ -59,7 +59,7 @@
          to clear GHSA-v5pm-xwqc-g5wc (high severity vuln in <= 2.7.4).
          Scalar.AspNetCore 2.16.10 pulls in Microsoft.OpenApi 2.0.0; this entry raises
          the floor to the patched version. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.9.0" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
     <!-- Aspire Packages -->
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="13.4.6" />
