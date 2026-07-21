@@ -55,10 +55,14 @@
          Microsoft.EntityFrameworkCore.Sqlite 10.0.9 pulls in SQLitePCLRaw.bundle_e_sqlite3 2.1.11
          which pins lib.e_sqlite3 to 2.1.11; this entry raises the floor to the patched version. -->
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
-    <!-- Microsoft.OpenApi override — pins transitive Microsoft.OpenApi to 2.7.5
-         to clear GHSA-v5pm-xwqc-g5wc (high severity vuln in <= 2.7.4).
-         Scalar.AspNetCore 2.16.10 pulls in Microsoft.OpenApi 2.0.0; this entry raises
-         the floor to the patched version. -->
+    <!-- Microsoft.OpenApi pinned to 2.7.5 (>= 2.7.5 clears GHSA-v5pm-xwqc-g5wc).
+         DO NOT bump to Microsoft.OpenApi 3.x while on Microsoft.AspNetCore.OpenApi 10.0.x:
+         AspNetCore.OpenApi 10.0.10's OpenApiXmlCommentSupport source generator targets the
+         mutable (pre-3.x) IOpenApiMediaType.Example setter, and Microsoft.OpenApi 3.x makes
+         Example read-only, causing CS0200 in generated code. The only AspNetCore.OpenApi
+         release compatible with Microsoft.OpenApi 3.x is 11.0.0-preview+ (net11.0, requires
+         .NET 11 preview SDK/runtime) — revisit this pin when .NET 11 GA ships a net10.0- or
+         net11.0-targetable stable release with matching Microsoft.OpenApi 3.x support. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
     <!-- Aspire Packages -->
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
