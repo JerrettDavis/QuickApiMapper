@@ -63,7 +63,7 @@
          release compatible with Microsoft.OpenApi 3.x is 11.0.0-preview+ (net11.0, requires
          .NET 11 preview SDK/runtime) — revisit this pin when .NET 11 GA ships a net10.0- or
          net11.0-targetable stable release with matching Microsoft.OpenApi 3.x support. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.11.0" />
     <!-- Aspire Packages -->
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="13.4.6" />
