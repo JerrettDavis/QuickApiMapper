@@ -26,7 +26,7 @@
     <PackageVersion Include="NSubstitute" Version="6.0.0" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageVersion Include="PatternKit.Core" Version="0.147.14" />
+    <PackageVersion Include="PatternKit.Core" Version="0.147.15" />
     <!-- gRPC Packages -->
     <PackageVersion Include="Grpc.AspNetCore" Version="2.80.0" />
     <PackageVersion Include="Grpc.AspNetCore.Server.Reflection" Version="2.80.0" />
@@ -85,7 +85,7 @@
     <!-- Authentication Packages -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(MicrosoftPackageVersion)" />
     <!-- Web Packages -->
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.16" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.17" />
     <PackageVersion Include="MudBlazor" Version="9.7.0" />
     <!-- SOAP Packages -->
     <PackageVersion Include="SoapCore" Version="1.2.1.14" />
