@@ -26,21 +26,21 @@
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageVersion Include="PatternKit.Core" Version="0.147.19" />
+    <PackageVersion Include="PatternKit.Core" Version="0.147.20" />
     <!-- gRPC Packages -->
     <PackageVersion Include="Grpc.AspNetCore" Version="2.83.0" />
     <PackageVersion Include="Grpc.AspNetCore.Server.Reflection" Version="2.83.0" />
-    <PackageVersion Include="Google.Protobuf" Version="3.35.1" />
+    <PackageVersion Include="Google.Protobuf" Version="3.36.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.83.0" />
     <!-- Azure Service Bus -->
     <PackageVersion Include="Azure.Messaging.ServiceBus" Version="7.20.2" />
     <!-- RabbitMQ -->
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.2" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.18.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.18.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.18.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0" />
     <!-- Health Check Packages -->
     <PackageVersion Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.Sqlite" Version="9.0.0" />
@@ -63,11 +63,11 @@
          release compatible with Microsoft.OpenApi 3.x is 11.0.0-preview+ (net11.0, requires
          .NET 11 preview SDK/runtime) — revisit this pin when .NET 11 GA ships a net10.0- or
          net11.0-targetable stable release with matching Microsoft.OpenApi 3.x support. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.12.0" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.12.2" />
     <!-- Aspire Packages -->
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.4.6" />
-    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.5.2" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.5.2" />
+    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.5.2" />
     <PackageVersion Include="MessagePack" Version="3.1.8" />
     <PackageVersion Include="MessagePack.Annotations" Version="3.1.8" />
     <!-- Test Packages -->
@@ -85,7 +85,7 @@
     <!-- Authentication Packages -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(MicrosoftPackageVersion)" />
     <!-- Web Packages -->
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.20" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.17.1" />
     <PackageVersion Include="MudBlazor" Version="9.8.0" />
     <!-- SOAP Packages -->
     <PackageVersion Include="SoapCore" Version="1.2.1.14" />
