@@ -211,6 +211,7 @@ jobs:
     needs: [validate-release, build-and-test]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    if: github.event_name == 'push'
 
     strategy:
       matrix:
@@ -366,6 +367,7 @@ jobs:
     needs: [validate-release, package-nuget, publish-executables]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout code
