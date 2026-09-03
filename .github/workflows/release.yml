@@ -240,6 +240,15 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      - name: Build solution
+        run: |
+          dotnet build \
+            --configuration Release \
+            --no-restore \
+            /p:ContinuousIntegrationBuild=true \
+            /p:Deterministic=true \
+            /p:Version=${{ needs.validate-release.outputs.version }}
+
       - name: Publish Management API
         shell: bash
         run: |
