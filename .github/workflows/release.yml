@@ -259,7 +259,6 @@ jobs:
             --no-dependencies \
             --output ./publish/management-api-${{ matrix.rid }} \
             -p:PublishSingleFile=true \
-            -p:PublishTrimmed=true \
             -p:Version=${{ needs.validate-release.outputs.version }}
 
       - name: Publish Web API
@@ -272,7 +271,6 @@ jobs:
             --no-dependencies \
             --output ./publish/web-api-${{ matrix.rid }} \
             -p:PublishSingleFile=true \
-            -p:PublishTrimmed=true \
             -p:Version=${{ needs.validate-release.outputs.version }}
 
       - name: Publish Designer Web
@@ -285,7 +283,6 @@ jobs:
             --no-dependencies \
             --output ./publish/designer-web-${{ matrix.rid }} \
             -p:PublishSingleFile=true \
-            -p:PublishTrimmed=true \
             -p:Version=${{ needs.validate-release.outputs.version }}
 
       - name: Create archives (Unix)
