@@ -26,11 +26,11 @@
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageVersion Include="PatternKit.Core" Version="0.147.22" />
+    <PackageVersion Include="PatternKit.Core" Version="0.147.23" />
     <!-- gRPC Packages -->
     <PackageVersion Include="Grpc.AspNetCore" Version="2.83.0" />
     <PackageVersion Include="Grpc.AspNetCore.Server.Reflection" Version="2.83.0" />
-    <PackageVersion Include="Google.Protobuf" Version="3.36.0" />
+    <PackageVersion Include="Google.Protobuf" Version="3.36.1" />
     <PackageVersion Include="Grpc.Tools" Version="2.83.0" />
     <!-- Azure Service Bus -->
     <PackageVersion Include="Azure.Messaging.ServiceBus" Version="7.20.2" />
@@ -88,6 +88,6 @@
     <PackageVersion Include="Scalar.AspNetCore" Version="2.17.2" />
     <PackageVersion Include="MudBlazor" Version="9.9.0" />
     <!-- SOAP Packages -->
-    <PackageVersion Include="SoapCore" Version="1.2.1.14" />
+    <PackageVersion Include="SoapCore" Version="1.2.1.15" />
   </ItemGroup>
 </Project>
