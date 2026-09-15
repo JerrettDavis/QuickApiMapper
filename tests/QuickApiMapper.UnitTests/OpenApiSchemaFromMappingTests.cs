@@ -35,7 +35,7 @@ public class OpenApiSchemaFromMappingTests
         }
 
         // Nested: customerinfo[]
-        var customerinfo = props["customerinfo"] as JObject;
+        var customerinfo = props!["customerinfo"] as JObject;
         Assert.That(customerinfo?["type"]?.ToString(), Is.EqualTo("array"));
         var customerinfoItems = customerinfo?["items"]?["properties"] as JObject;
         Assert.That(customerinfoItems, Is.Not.Null);
