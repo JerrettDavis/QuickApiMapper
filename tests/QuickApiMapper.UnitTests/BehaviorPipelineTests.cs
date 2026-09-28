@@ -77,9 +77,9 @@ public sealed class BehaviorPipelineTests : IDisposable
             x => x.Log(
                 LogLevel.Debug,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Starting validation behavior")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()!),
+                It.Is<It.IsAnyType>((v, t) => v != null && v.ToString()!.Contains("Starting validation behavior")),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()!),
             Times.Once);
     }
 
@@ -181,9 +181,9 @@ public sealed class BehaviorPipelineTests : IDisposable
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Mapping execution completed")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()!),
+                It.Is<It.IsAnyType>((v, t) => v != null && v.ToString()!.Contains("Mapping execution completed")),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()!),
             Times.Once);
     }
 
@@ -217,9 +217,9 @@ public sealed class BehaviorPipelineTests : IDisposable
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Mapping execution failed")),
+                It.Is<It.IsAnyType>((v, t) => v != null && v.ToString()!.Contains("Mapping execution failed")),
                 expectedException,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()!),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()!),
             Times.Once);
     }
 
@@ -294,9 +294,9 @@ public sealed class BehaviorPipelineTests : IDisposable
             x => x.Log(
                 LogLevel.Debug,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("HTTP client configuration behavior completed")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()!),
+                It.Is<It.IsAnyType>((v, t) => v != null && v.ToString()!.Contains("HTTP client configuration behavior completed")),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()!),
             Times.Once);
     }
 
