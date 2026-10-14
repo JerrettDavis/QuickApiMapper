@@ -154,7 +154,7 @@ public sealed class BehaviorIntegrationTests : IDisposable
     }
 
     [Test]
-    public void Pipeline_WithAuthenticationFailure_ShouldPropagateError()
+    public async Task Pipeline_WithAuthenticationFailure_ShouldPropagateError()
     {
         // Arrange
         using var failureResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized);
@@ -183,12 +183,12 @@ public sealed class BehaviorIntegrationTests : IDisposable
             .AddPreRunBehavior(authBehavior)
             .AddWholeRunBehavior(timingBehavior)
             .BuildPipeline(_serviceProvider);
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.ExecuteAsync(context, _ => Task.FromResult(MappingResult.Success())));
-        Assert.That(ex.Message, Contains.Substring("Token acquisition failed"));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.ExecuteAsync(context, _ => Task.FromResult(MappingResult.Success())));
+        Assert.That(ex!.Message, Contains.Substring("Token acquisition failed"));
     }
 
     [Test]
-    public void Pipeline_WithValidationFailure_ShouldFailEarly()
+    public async Task Pipeline_WithValidationFailure_ShouldFailEarly()
     {
         // Arrange
         var validationBehavior = new ValidationBehavior(_serviceProvider.GetRequiredService<ILogger<ValidationBehavior>>());
@@ -202,9 +202,9 @@ public sealed class BehaviorIntegrationTests : IDisposable
         var context = CreateMappingContext([]);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.ExecuteAsync(context, _ => Task.FromResult(MappingResult.Success())));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.ExecuteAsync(context, _ => Task.FromResult(MappingResult.Success())));
 
-        Assert.That(ex.Message, Contains.Substring("No mappings provided"));
+        Assert.That(ex!.Message, Contains.Substring("No mappings provided"));
     }
 
     [Test]

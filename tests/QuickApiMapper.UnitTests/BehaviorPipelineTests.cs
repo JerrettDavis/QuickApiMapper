@@ -84,20 +84,20 @@ public sealed class BehaviorPipelineTests : IDisposable
     }
 
     [Test]
-    public void ValidationBehavior_WithNoMappings_ShouldThrow()
+    public async Task ValidationBehavior_WithNoMappings_ShouldThrow()
     {
         // Arrange
         var behavior = new ValidationBehavior(_validationLogger.Object);
         var context = CreateMappingContext(Array.Empty<FieldMapping>());
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => behavior.ExecuteAsync(context));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.ExecuteAsync(context));
 
-        Assert.That(ex.Message, Contains.Substring("No mappings provided"));
+        Assert.That(ex!.Message, Contains.Substring("No mappings provided"));
     }
 
     [Test]
-    public void ValidationBehavior_WithNoDataSources_ShouldThrow()
+    public async Task ValidationBehavior_WithNoDataSources_ShouldThrow()
     {
         // Arrange
         var behavior = new ValidationBehavior(_validationLogger.Object);
@@ -111,13 +111,13 @@ public sealed class BehaviorPipelineTests : IDisposable
         };
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => behavior.ExecuteAsync(context));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.ExecuteAsync(context));
 
-        Assert.That(ex.Message, Contains.Substring("No data sources provided"));
+        Assert.That(ex!.Message, Contains.Substring("No data sources provided"));
     }
 
     [Test]
-    public void ValidationBehavior_WithEmptySourcePaths_ShouldThrow()
+    public async Task ValidationBehavior_WithEmptySourcePaths_ShouldThrow()
     {
         // Arrange
         var behavior = new ValidationBehavior(_validationLogger.Object);
@@ -128,9 +128,9 @@ public sealed class BehaviorPipelineTests : IDisposable
         });
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => behavior.ExecuteAsync(context));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.ExecuteAsync(context));
 
-        Assert.That(ex.Message, Contains.Substring("mappings with empty source paths"));
+        Assert.That(ex!.Message, Contains.Substring("mappings with empty source paths"));
     }
 
     [Test]
@@ -415,7 +415,7 @@ public sealed class BehaviorPipelineTests : IDisposable
     }
 
     [Test]
-    public void AuthenticationBehavior_WithFailedTokenRequest_ShouldThrow()
+    public async Task AuthenticationBehavior_WithFailedTokenRequest_ShouldThrow()
     {
         // Arrange
         var config = new AuthenticationConfig
@@ -439,9 +439,9 @@ public sealed class BehaviorPipelineTests : IDisposable
         var context = CreateMappingContext();
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => behavior.ExecuteAsync(context));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.ExecuteAsync(context));
 
-        Assert.That(ex.Message, Contains.Substring("Token acquisition failed"));
+        Assert.That(ex!.Message, Contains.Substring("Token acquisition failed"));
     }
 
     [Test]
