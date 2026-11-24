@@ -65,6 +65,7 @@
          net11.0-targetable stable release with matching Microsoft.OpenApi 3.x support. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="2.13.1" />
     <!-- Aspire Packages -->
+    <PackageVersion Include="Aspire.Hosting.Dotnet" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="17.0.0" />

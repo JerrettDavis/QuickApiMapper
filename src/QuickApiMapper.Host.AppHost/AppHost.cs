@@ -24,7 +24,7 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 // Provides: REST/JSON endpoints for order submission and retrieval
 // Endpoints: POST /api/orders, GET /api/orders, GET /api/orders/{id}, PUT /api/orders/{id}/status
 // Used by: QuickApiMapper Web API for demonstration of JSON-to-SOAP transformations
-var demoJsonApi = builder.AddProject<Projects.Demo_JsonApi>("demo-jsonapi")
+var demoJsonApi = builder.AddDotnetProject("demo-jsonapi", new Projects.Demo_JsonApi().ProjectPath)
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health");
 
@@ -33,7 +33,7 @@ var demoJsonApi = builder.AddProject<Projects.Demo_JsonApi>("demo-jsonapi")
 // Endpoints: SubmitFulfillmentRequest, GetFulfillmentStatus, CancelFulfillment
 // WSDL: /WarehouseService.asmx?wsdl
 // Used by: QuickApiMapper Web API for demonstration of JSON-to-SOAP transformations
-var demoSoapApi = builder.AddProject<Projects.Demo_SoapApi>("demo-soapapi")
+var demoSoapApi = builder.AddDotnetProject("demo-soapapi", new Projects.Demo_SoapApi().ProjectPath)
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health");
 
@@ -43,7 +43,7 @@ var demoSoapApi = builder.AddProject<Projects.Demo_SoapApi>("demo-soapapi")
 // Central configuration and administration service
 // Manages integration mappings, endpoints, and demo data
 
-var managementApi = builder.AddProject<Projects.QuickApiMapper_Management_Api>("management-api")
+var managementApi = builder.AddDotnetProject("management-api", new Projects.QuickApiMapper_Management_Api().ProjectPath)
     .WithReference(postgres)
     .WithReference(redis)
     .WithExternalHttpEndpoints()
@@ -68,7 +68,7 @@ if (builder.Environment.EnvironmentName == "Development")
 // The primary QuickApiMapper service that performs integration mappings
 // This service references the demo services for service discovery
 
-var webApi = builder.AddProject<Projects.QuickApiMapper_Web>("web-api")
+var webApi = builder.AddDotnetProject("web-api", new Projects.QuickApiMapper_Web().ProjectPath)
     .WithReference(postgres)
     .WithReference(redis)
     .WithReference(rabbitmq)
@@ -87,7 +87,7 @@ var webApi = builder.AddProject<Projects.QuickApiMapper_Web>("web-api")
 // ===========================
 // Visual configuration interface for creating and managing integration mappings
 
-var designerWeb = builder.AddProject<Projects.QuickApiMapper_Designer_Web>("designer-web")
+var designerWeb = builder.AddDotnetProject("designer-web", new Projects.QuickApiMapper_Designer_Web().ProjectPath)
     .WithReference(managementApi)
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")
